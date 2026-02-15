@@ -10,6 +10,8 @@ go get github.com/sydneyowl/clh-plugin-go-sdk
 
 ## Quick start
 
+Please note that for performance considerations, Decode type messages are not sent in real-time. Instead, they are batched and sent as packed WSJT-X messages after waiting for all WSJT-X decoding to complete (when no new messages are received within 3 seconds).
+
 ### Create a client
 ```go
 package main

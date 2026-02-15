@@ -150,7 +150,7 @@ func (c *ClhClient) Connect() error {
 	return nil
 }
 
-func (c *ClhClient) WaitMessage() (protoreflect.ProtoMessage, error) {
+func (c *ClhClient) WaitMessage() (Message, error) {
 	anyMsg := &anypb.Any{}
 	err := protodelim.UnmarshalFrom(c.reader, anyMsg)
 	if err != nil {
@@ -167,8 +167,12 @@ func (c *ClhClient) WaitMessage() (protoreflect.ProtoMessage, error) {
 	}
 
 	switch v := msg.(type) {
-	case *plugin.WsjtxMessage, *plugin.PackedWsjtxMessage, *plugin.RigData:
-		return v, nil
+	case *plugin.RigData:
+		return convertRigData(v), nil
+	case *plugin.WsjtxMessage:
+		return convertWsjtxMessage(v), nil
+	case *plugin.PackedWsjtxMessage:
+		return convertPackedWsjtxMessage(v), nil
 
 	default:
 		return nil, fmt.Errorf("unknown message type: %T", msg)

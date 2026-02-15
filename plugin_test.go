@@ -28,10 +28,23 @@ func TestE2EClhClient(t *testing.T) {
 	}
 
 	// Test WaitMessage
-	_, err = client.WaitMessage()
+	msg, err := client.WaitMessage()
 	if err != nil {
 		t.Fatalf("WaitMessage failed: %v", err)
 	}
+	t.Logf("WaitMessage: %v", msg)
+
+	msg, err = client.WaitMessage()
+	if err != nil {
+		t.Fatalf("WaitMessage failed: %v", err)
+	}
+	t.Logf("WaitMessage: %v", msg)
+
+	msg, err = client.WaitMessage()
+	if err != nil {
+		t.Fatalf("WaitMessage failed: %v", err)
+	}
+	t.Logf("WaitMessage: %v", msg)
 
 	// Test Close
 	if err := client.Close(); err != nil {
