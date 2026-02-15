@@ -5,7 +5,7 @@ It provides basical functionality for communicating with CLH main program.
 
 ## Install
 ```
-go get github.com/sydneyowl/clh-plugin-go-sdk
+go get github.com/SydneyOwl/clh-plugin-go-sdk
 ```
 
 ## Quick start
