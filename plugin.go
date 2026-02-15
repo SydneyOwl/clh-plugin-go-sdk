@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -163,7 +162,7 @@ func (c *ClhClient) WaitMessage() (Message, error) {
 
 	msg, err := anyMsg.UnmarshalNew()
 	if err != nil {
-		log.Fatalf("Failed to create message: %v", err)
+		return nil, err
 	}
 
 	switch v := msg.(type) {

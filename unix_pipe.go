@@ -9,9 +9,5 @@ import "net"
 const PipePath = "/tmp/clh.plugin"
 
 func dialPipe() (net.Conn, error) {
-	conn, err := net.Dial("unix", PipePath)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
+	return net.Dial("unix", PipePath)
 }
