@@ -17,61 +17,61 @@ Please note that for performance considerations, Decode type messages are not se
 package main
 
 import (
-    "log"
-    "time"
-    "github.com/sydneyowl/clh-plugin-go-sdk"
+	"github.com/sydneyowl/clh-plugin-go-sdk"
+	"log"
+	"time"
 )
 
 func main() {
-    // Configure plugin information
-    config := pluginsdk.PluginConfig{
-        Uuid:        "your-plugin-uuid",        // UUID must be unique across all plugins
-        Name:        "My Plugin",                // Plugin name
-        Version:     "1.0.0",                     // Plugin version
-        Description: "This is my awesome plugin", // Plugin description
-        Capabilities: []pluginsdk.PluginCapability{
-            pluginsdk.CapabilityWsjtxMessage,     // Declare support for WSJT-X messages
-            pluginsdk.CapabilityRigData,           // Declare support for radio data
-        },
-    }
+	// Configure plugin information
+	config := pluginsdk.PluginConfig{
+		Uuid:        "your-plugin-uuid",          // UUID must be unique across all plugins
+		Name:        "My Plugin",                 // Plugin name
+		Version:     "1.0.0",                     // Plugin version
+		Description: "This is my awesome plugin", // Plugin description
+		Capabilities: []pluginsdk.PluginCapability{
+			pluginsdk.CapabilityWsjtxMessage, // Declare support for WSJT-X messages
+			pluginsdk.CapabilityRigData,      // Declare support for radio data
+		},
+	}
 
-    // Create client instance (with optional parameters)
-    client, err := pluginsdk.NewClient(
-        config,
-        pluginsdk.WithHeartbeatInterval(3*time.Second), // Custom heartbeat interval
-    )
-    if err != nil {
-        log.Fatalf("Failed to create client: %v", err)
-    }
-    defer client.Close() // Ensure client is closed at the end
+	// Create client instance (with optional parameters)
+	client, err := pluginsdk.NewClient(
+		config,
+		pluginsdk.WithHeartbeatInterval(3*time.Second), // Custom heartbeat interval
+	)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	defer client.Close() // Ensure client is closed at the end
 
-    // Connect to CLH main program
-    if err := client.Connect(); err != nil {
-        log.Fatalf("Connection failed: %v", err)
-    }
-    
-    log.Println("Plugin successfully connected to CLH")
-	
-	// then you can receive messages by calling WaitMessage. 
+	// Connect to CLH main program
+	if err := client.Connect(); err != nil {
+		log.Fatalf("Connection failed: %v", err)
+	}
+
+	log.Println("Plugin successfully connected to CLH")
+
+	// then you can receive messages by calling WaitMessage.
 	// WaitMessage is blocking, you can receive and process messages in a goroutine.
-	// If you call the Close method outside the goroutine, WaitMessage will immediately 
+	// If you call the Close method outside the goroutine, WaitMessage will immediately
 	// exit and return an error.
 	mmsg, err := client.WaitMessage()
 	if err != nil {
 		log.Fatalf("WaitMessage failed: %v", err)
 	}
-	
+
 	// you can handle received messages here
 	switch v := mmsg.(type) {
-	case *plugin.WsjtxMessage:
+	case pluginsdk.WsjtxMessage:
 		log.Printf("Received WSJT-X message: %+v", v)
 		// Process WSJT-X message...
 
-	case *plugin.PackedWsjtxMessage:
+	case pluginsdk.PackedWsjtxMessage:
 		log.Printf("Received packed WSJT-X message: %+v", v)
 		// Process packed WSJT-X message...
 
-	case *plugin.RigData:
+	case pluginsdk.RigData:
 		log.Printf("Received radio data: %+v", v)
 		// Process radio data...
 
@@ -79,5 +79,6 @@ func main() {
 		log.Printf("Unknown message type: %T", v)
 	}
 }
+
 ```
 
