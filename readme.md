@@ -17,7 +17,7 @@ Please note that for performance considerations, Decode type messages are not se
 package main
 
 import (
-	"github.com/sydneyowl/clh-plugin-go-sdk"
+	"github.com/SydneyOwl/clh-plugin-go-sdk"
 	"log"
 	"time"
 )

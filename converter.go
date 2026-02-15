@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	pbplugin "github.com/sydneyowl/clh-plugin-go-sdk/clh-proto/gen/go"
+	pbplugin "github.com/SydneyOwl/clh-proto/gen/go"
 )
 
 // convertRigData converts protobuf RigData to internal RigData
