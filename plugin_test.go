@@ -1,104 +1,118 @@
 package pluginsdk
 
 import (
-	"fmt"
-	"github.com/google/uuid"
 	"testing"
+	"time"
 )
 
-func TestDupeClose(t *testing.T) {
-	s := uuid.New().String()
-	client, err := NewClient(PluginConfig{
-		Uuid:        s,
-		Name:        "TestPlugin",
+func TestE2EClhClient(t *testing.T) {
+	config := PluginConfig{
+		Uuid:        "test-uuid",
+		Name:        "Test Plugin",
 		Version:     "1.0.0",
-		Description: "Test",
+		Description: "A test plugin",
 		Capabilities: []PluginCapability{
 			CapabilityWsjtxMessage,
 			CapabilityRigData,
 		},
-	}, nil)
-
-	if err != nil {
-		t.Fatalf("Error creating client: %s", err)
 	}
 
-	err = client.Connect()
+	client, err := NewClient(config)
 	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
+		t.Fatalf("NewClient failed: %v", err)
 	}
 
-	err = client.Close()
-	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
+	// Test Connect
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Connect failed: %v", err)
 	}
 
-	err = client.Close()
+	// Test WaitMessage
+	_, err = client.WaitMessage()
 	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
+		t.Fatalf("WaitMessage failed: %v", err)
+	}
+
+	// Test Close
+	if err := client.Close(); err != nil {
+		t.Errorf("First Close failed: %v", err)
+	}
+
+	// Test idempotent Close
+	if err := client.Close(); err != nil {
+		t.Errorf("Second Close should be safe, but got: %v", err)
+	}
+
+	// Test Connect on closed client
+	if err := client.Connect(); err == nil {
+		t.Error("Expected error when connecting closed client, got nil")
+	} else if err.Error() != "you are not allowd to call connect on a closed client. please create a new client instead" {
+		t.Errorf("Unexpected error: %v", err)
 	}
 }
 
-func TestDupeConnect(t *testing.T) {
-	s := uuid.New().String()
-	client, err := NewClient(PluginConfig{
-		Uuid:        s,
-		Name:        "TestPlugin",
-		Version:     "1.0.0",
-		Description: "Test",
-		Capabilities: []PluginCapability{
-			CapabilityWsjtxMessage,
-			CapabilityRigData,
-		},
-	}, nil)
-
-	if err != nil {
-		t.Fatalf("Error creating client: %s", err)
+func TestWithHeartbeatInterval(t *testing.T) {
+	config := PluginConfig{
+		Uuid:        "test-uuid",
+		Name:        "Test",
+		Version:     "1.0",
+		Description: "test",
 	}
 
-	err = client.Connect()
+	client, err := NewClient(config, WithHeartbeatInterval(3*time.Second))
 	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
+		t.Fatalf("NewClient with option failed: %v", err)
+	}
+	if client.heartbeatInterval != 3*time.Second {
+		t.Errorf("Expected 3s heartbeat, got %v", client.heartbeatInterval)
 	}
 
-	err = client.Connect()
-	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
-	}
-
-	err = client.Connect()
-	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
+	// Test invalid interval
+	_, err = NewClient(config, WithHeartbeatInterval(15*time.Second))
+	if err == nil {
+		t.Error("Expected error for invalid heartbeat interval")
 	}
 }
 
-func TestNewClient(t *testing.T) {
-	s := uuid.New().String()
-	client, err := NewClient(PluginConfig{
-		Uuid:        s,
-		Name:        "TestPlugin",
-		Version:     "1.0.0",
-		Description: "Test",
-		Capabilities: []PluginCapability{
-			CapabilityWsjtxMessage,
-			CapabilityRigData,
+func TestNewClientValidation(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  PluginConfig
+		wantErr bool
+	}{
+		{
+			name:    "missing uuid",
+			config:  PluginConfig{Name: "x", Version: "1", Description: "d"},
+			wantErr: true,
 		},
-	}, nil)
-
-	if err != nil {
-		t.Fatalf("Error creating client: %s", err)
+		{
+			name:    "missing name",
+			config:  PluginConfig{Uuid: "u", Version: "1", Description: "d"},
+			wantErr: true,
+		},
+		{
+			name:    "missing version",
+			config:  PluginConfig{Uuid: "u", Name: "n", Description: "d"},
+			wantErr: true,
+		},
+		{
+			name:    "missing description",
+			config:  PluginConfig{Uuid: "u", Name: "n", Version: "1"},
+			wantErr: true,
+		},
+		{
+			name:    "valid",
+			config:  PluginConfig{Uuid: "u", Name: "n", Version: "1", Description: "d"},
+			wantErr: false,
+		},
 	}
 
-	err = client.Connect()
-	if err != nil {
-		t.Fatalf("Error connecting: %s", err)
-	}
-
-	for {
-		message, err := client.WaitMessage()
-		if err != nil {
-			t.Fatalf("Error waiting for message: %s", err)
-		}
-		fmt.Printf("%v\n", message)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewClient(tc.config)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("NewClient() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
 	}
 }

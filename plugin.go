@@ -56,6 +56,8 @@ type ClhClient struct {
 	wg sync.WaitGroup
 	mu sync.Mutex
 
+	closed bool
+
 	pluginCfg         *PluginConfig
 	heartbeatInterval time.Duration
 }
@@ -102,6 +104,10 @@ func NewClient(config PluginConfig, opts ...Option) (*ClhClient, error) {
 }
 
 func (c *ClhClient) Connect() error {
+	if c.closed {
+		return fmt.Errorf("you are not allowd to call connect on a closed client. please create a new client instead")
+	}
+
 	conn, err := dialPipe()
 	if err != nil {
 		return fmt.Errorf("dial pipe failed: %w", err)
@@ -181,10 +187,7 @@ func (c *ClhClient) heartbeat() {
 				Uuid:      c.pluginCfg.Uuid,
 				Timestamp: timestamppb.Now(),
 			}
-			if err := c.writeMessageToPipe(hb); err != nil {
-				c.cancel(fmt.Errorf("heartbeat failed: %w", err))
-				return
-			}
+			_ = c.writeMessageToPipe(hb)
 		case <-c.ctx.Done():
 			return
 		}
@@ -192,11 +195,16 @@ func (c *ClhClient) heartbeat() {
 }
 
 func (c *ClhClient) Close() error {
+	if c.closed {
+		return nil
+	}
+
 	c.cancel(nil)
 	c.wg.Wait()
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	c.closed = true
 
 	if c.conn != nil {
 		if err := c.conn.Close(); err != nil {
