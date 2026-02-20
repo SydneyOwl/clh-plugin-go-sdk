@@ -7,13 +7,13 @@ import (
 )
 
 // convertRigData converts protobuf RigData to internal RigData
-func convertRigData(pb *pbplugin.RigData) RigData {
+func convertRigData(pb *pbplugin.RigData) *RigData {
 	timestamp := time.Time{}
 	if pb.Timestamp != nil {
 		timestamp = pb.Timestamp.AsTime()
 	}
 
-	return RigData{
+	return &RigData{
 		UUID:        pb.Uuid,
 		Provider:    pb.Provider,
 		RigName:     pb.RigName,
@@ -28,8 +28,8 @@ func convertRigData(pb *pbplugin.RigData) RigData {
 }
 
 // convertWsjtxMessage converts protobuf WsjtxMessage to internal WsjtxMessage
-func convertWsjtxMessage(pb *pbplugin.WsjtxMessage) WsjtxMessage {
-	msg := WsjtxMessage{
+func convertWsjtxMessage(pb *pbplugin.WsjtxMessage) *WsjtxMessage {
+	msg := &WsjtxMessage{
 		Header: MessageHeader{
 			MagicNumber: pb.Header.MagicNumber,
 			SchemaNumer: pb.Header.SchemaNumber,
@@ -80,13 +80,13 @@ func convertWsjtxMessage(pb *pbplugin.WsjtxMessage) WsjtxMessage {
 }
 
 // convertHeartbeat converts protobuf Heartbeat to internal Heartbeat
-func convertHeartbeat(pb *pbplugin.Heartbeat) Heartbeat {
+func convertHeartbeat(pb *pbplugin.Heartbeat) *Heartbeat {
 	var revision *string
 	if pb.Revision != nil {
 		revision = pb.Revision
 	}
 
-	return Heartbeat{
+	return &Heartbeat{
 		MaxSchemaNumer: pb.MaxSchemaNumber,
 		Version:        pb.Version,
 		Revision:       revision,
@@ -94,8 +94,8 @@ func convertHeartbeat(pb *pbplugin.Heartbeat) Heartbeat {
 }
 
 // convertStatus converts protobuf Status to internal Status
-func convertStatus(pb *pbplugin.Status) Status {
-	status := Status{
+func convertStatus(pb *pbplugin.Status) *Status {
+	status := &Status{
 		DialFrequency: pb.DialFrequency,
 		Mode:          pb.Mode,
 		DXCall:        pb.DxCall,
@@ -139,13 +139,13 @@ func convertStatus(pb *pbplugin.Status) Status {
 }
 
 // convertDecode converts protobuf Decode to internal Decode
-func convertDecode(pb *pbplugin.Decode) Decode {
+func convertDecode(pb *pbplugin.Decode) *Decode {
 	decodeTime := time.Time{}
 	if pb.Time != nil {
 		decodeTime = pb.Time.AsTime()
 	}
 
-	return Decode{
+	return &Decode{
 		IsNew:          pb.IsNew,
 		Time:           decodeTime,
 		SNR:            pb.Snr,
@@ -159,20 +159,20 @@ func convertDecode(pb *pbplugin.Decode) Decode {
 }
 
 // convertClear converts protobuf Clear to internal Clear
-func convertClear(pb *pbplugin.Clear) Clear {
-	return Clear{
+func convertClear(pb *pbplugin.Clear) *Clear {
+	return &Clear{
 		Window: ClearWindow(pb.Window),
 	}
 }
 
 // convertReply converts protobuf Reply to internal Reply
-func convertReply(pb *pbplugin.Reply) Reply {
+func convertReply(pb *pbplugin.Reply) *Reply {
 	replyTime := time.Time{}
 	if pb.Time != nil {
 		replyTime = pb.Time.AsTime()
 	}
 
-	return Reply{
+	return &Reply{
 		Time:           replyTime,
 		SNR:            pb.Snr,
 		DeltaTime:      pb.DeltaTime,
@@ -185,7 +185,7 @@ func convertReply(pb *pbplugin.Reply) Reply {
 }
 
 // convertQSOLogged converts protobuf QSOLogged to internal QSOLogged
-func convertQSOLogged(pb *pbplugin.QSOLogged) QSOLogged {
+func convertQSOLogged(pb *pbplugin.QSOLogged) *QSOLogged {
 	datetimeOff := time.Time{}
 	if pb.DatetimeOff != nil {
 		datetimeOff = pb.DatetimeOff.AsTime()
@@ -196,7 +196,7 @@ func convertQSOLogged(pb *pbplugin.QSOLogged) QSOLogged {
 		datetimeOn = pb.DatetimeOn.AsTime()
 	}
 
-	qso := QSOLogged{
+	qso := &QSOLogged{
 		DatetimeOff:    datetimeOff,
 		DXCall:         pb.DxCall,
 		DXGrid:         pb.DxGrid,
@@ -228,33 +228,33 @@ func convertQSOLogged(pb *pbplugin.QSOLogged) QSOLogged {
 }
 
 // convertClose converts protobuf Close to internal Close
-func convertClose(pb *pbplugin.Close) Close {
-	return Close{}
+func convertClose(pb *pbplugin.Close) *Close {
+	return &Close{}
 }
 
 // convertHaltTx converts protobuf HaltTx to internal HaltTx
-func convertHaltTx(pb *pbplugin.HaltTx) HaltTx {
-	return HaltTx{
+func convertHaltTx(pb *pbplugin.HaltTx) *HaltTx {
+	return &HaltTx{
 		AutoTxOnly: pb.AutoTxOnly,
 	}
 }
 
 // convertFreeText converts protobuf FreeText to internal FreeText
-func convertFreeText(pb *pbplugin.FreeText) FreeText {
-	return FreeText{
+func convertFreeText(pb *pbplugin.FreeText) *FreeText {
+	return &FreeText{
 		Text: pb.Text,
 		Send: pb.Send,
 	}
 }
 
 // convertWSPRDecode converts protobuf WSPRDecode to internal WSPRDecode
-func convertWSPRDecode(pb *pbplugin.WSPRDecode) WSPRDecode {
+func convertWSPRDecode(pb *pbplugin.WSPRDecode) *WSPRDecode {
 	decodeTime := time.Time{}
 	if pb.Time != nil {
 		decodeTime = pb.Time.AsTime()
 	}
 
-	wspr := WSPRDecode{
+	wspr := &WSPRDecode{
 		IsNew:     pb.IsNew,
 		Time:      decodeTime,
 		SNR:       pb.Snr,
@@ -274,22 +274,22 @@ func convertWSPRDecode(pb *pbplugin.WSPRDecode) WSPRDecode {
 }
 
 // convertLocation converts protobuf Location to internal Location
-func convertLocation(pb *pbplugin.Location) Location {
-	return Location{
+func convertLocation(pb *pbplugin.Location) *Location {
+	return &Location{
 		Location: pb.Location,
 	}
 }
 
 // convertLoggedADIF converts protobuf LoggedADIF to internal LoggedADIF
-func convertLoggedADIF(pb *pbplugin.LoggedADIF) LoggedADIF {
-	return LoggedADIF{
+func convertLoggedADIF(pb *pbplugin.LoggedADIF) *LoggedADIF {
+	return &LoggedADIF{
 		ADIFText: pb.AdifText,
 	}
 }
 
 // convertHighlightCallsign converts protobuf HighlightCallsign to internal HighlightCallsign
-func convertHighlightCallsign(pb *pbplugin.HighlightCallsign) HighlightCallsign {
-	return HighlightCallsign{
+func convertHighlightCallsign(pb *pbplugin.HighlightCallsign) *HighlightCallsign {
+	return &HighlightCallsign{
 		Callsign:        pb.Callsign,
 		BackgroundColor: pb.BackgroundColor,
 		ForegroundColor: pb.ForegroundColor,
@@ -298,15 +298,15 @@ func convertHighlightCallsign(pb *pbplugin.HighlightCallsign) HighlightCallsign 
 }
 
 // convertSwitchConfiguration converts protobuf SwitchConfiguration to internal SwitchConfiguration
-func convertSwitchConfiguration(pb *pbplugin.SwitchConfiguration) SwitchConfiguration {
-	return SwitchConfiguration{
+func convertSwitchConfiguration(pb *pbplugin.SwitchConfiguration) *SwitchConfiguration {
+	return &SwitchConfiguration{
 		ConfigName: pb.ConfigName,
 	}
 }
 
 // convertConfigure converts protobuf Configure to internal Configure
-func convertConfigure(pb *pbplugin.Configure) Configure {
-	return Configure{
+func convertConfigure(pb *pbplugin.Configure) *Configure {
+	return &Configure{
 		Mode:               pb.Mode,
 		FrequencyTolerance: pb.FrequencyTolerance,
 		SubMode:            pb.SubMode,
@@ -320,7 +320,7 @@ func convertConfigure(pb *pbplugin.Configure) Configure {
 }
 
 // convertPackedWsjtxMessage converts protobuf PackedWsjtxMessage to internal PackedWsjtxMessage
-func convertPackedWsjtxMessage(pb *pbplugin.PackedWsjtxMessage) PackedWsjtxMessage {
+func convertPackedWsjtxMessage(pb *pbplugin.PackedWsjtxMessage) *PackedWsjtxMessage {
 	timestamp := time.Time{}
 	if pb.Timestamp != nil {
 		timestamp = pb.Timestamp.AsTime()
@@ -329,10 +329,10 @@ func convertPackedWsjtxMessage(pb *pbplugin.PackedWsjtxMessage) PackedWsjtxMessa
 	messages := make([]*WsjtxMessage, len(pb.Messages))
 	for i, msg := range pb.Messages {
 		converted := convertWsjtxMessage(msg)
-		messages[i] = &converted
+		messages[i] = converted
 	}
 
-	return PackedWsjtxMessage{
+	return &PackedWsjtxMessage{
 		Messages:  messages,
 		Timestamp: timestamp,
 	}

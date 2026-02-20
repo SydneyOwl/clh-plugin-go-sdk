@@ -63,15 +63,15 @@ func main() {
 
 	// you can handle received messages here
 	switch v := mmsg.(type) {
-	case pluginsdk.WsjtxMessage:
+	case *pluginsdk.WsjtxMessage:
 		log.Printf("Received WSJT-X message: %+v", v)
 		// Process WSJT-X message...
 
-	case pluginsdk.PackedWsjtxMessage:
+	case *pluginsdk.PackedWsjtxMessage:
 		log.Printf("Received packed WSJT-X message: %+v", v)
 		// Process packed WSJT-X message...
 
-	case pluginsdk.RigData:
+	case *pluginsdk.RigData:
 		log.Printf("Received radio data: %+v", v)
 		// Process radio data...
 
