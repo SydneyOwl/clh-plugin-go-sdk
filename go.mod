@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/SydneyOwl/clh-proto/gen/go v0.0.0-20260215095831-bf0994867a05
+	github.com/SydneyOwl/clh-proto/gen/go/v20260214 v20260214.0.0-20260220102738-af943f78b75d
 	google.golang.org/protobuf v1.36.11
 )
 

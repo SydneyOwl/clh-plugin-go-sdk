@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	plugin "github.com/SydneyOwl/clh-proto/gen/go"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260214"
 	"google.golang.org/protobuf/encoding/protodelim"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -16,13 +16,6 @@ import (
 
 const (
 	DefaultHeartbeatInterval = time.Second * 5
-)
-
-type PluginCapability int32
-
-const (
-	CapabilityWsjtxMessage PluginCapability = PluginCapability(plugin.Capability_wsjtx_message)
-	CapabilityRigData      PluginCapability = PluginCapability(plugin.Capability_rig_data)
 )
 
 type Option func(client *ClhClient) error

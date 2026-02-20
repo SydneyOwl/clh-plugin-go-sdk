@@ -1,6 +1,16 @@
 package pluginsdk
 
-import "time"
+import (
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260214"
+	"time"
+)
+
+type PluginCapability int32
+
+const (
+	CapabilityWsjtxMessage PluginCapability = PluginCapability(plugin.Capability_wsjtx_message)
+	CapabilityRigData      PluginCapability = PluginCapability(plugin.Capability_rig_data)
+)
 
 // RigData contains radio rig information
 type RigData struct {
