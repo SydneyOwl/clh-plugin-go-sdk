@@ -18,6 +18,7 @@ package main
 
 import (
 	"github.com/SydneyOwl/clh-plugin-go-sdk"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"time"
 )
@@ -64,16 +65,19 @@ func main() {
 	// you can handle received messages here
 	switch v := mmsg.(type) {
 	case *pluginsdk.WsjtxMessage:
-		log.Printf("Received WSJT-X message: %+v", v)
-		// Process WSJT-X message...
+		spew.Dump(v)
 
-	case *pluginsdk.PackedWsjtxMessage:
-		log.Printf("Received packed WSJT-X message: %+v", v)
-		// Process packed WSJT-X message...
+	case *pluginsdk.PackedDecodeMessage:
+		spew.Dump(v)
 
 	case *pluginsdk.RigData:
-		log.Printf("Received radio data: %+v", v)
-		// Process radio data...
+		spew.Dump(v)
+
+	case *pluginsdk.PipeConnectionClosed:
+		spew.Dump(v)
+
+	case *pluginsdk.ClhInternalMessage:
+		spew.Dump(v)
 
 	default:
 		log.Printf("Unknown message type: %T", v)
