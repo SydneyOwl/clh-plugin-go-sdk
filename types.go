@@ -1,15 +1,17 @@
 package pluginsdk
 
 import (
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260214"
 	"time"
+
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
 )
 
 type PluginCapability int32
 
 const (
-	CapabilityWsjtxMessage PluginCapability = PluginCapability(plugin.Capability_wsjtx_message)
-	CapabilityRigData      PluginCapability = PluginCapability(plugin.Capability_rig_data)
+	CapabilityWsjtxMessage       PluginCapability = PluginCapability(plugin.Capability_WSJTX_MESSAGE)
+	CapabilityRigData            PluginCapability = PluginCapability(plugin.Capability_RIG_DATA)
+	CapabilityClhInternalMessage PluginCapability = PluginCapability(plugin.Capability_CLH_INTERNAL_DATA)
 )
 
 // RigData contains radio rig information
@@ -267,9 +269,9 @@ func (HighlightCallsign) isWsjtxMessagePayload()   {}
 func (SwitchConfiguration) isWsjtxMessagePayload() {}
 func (Configure) isWsjtxMessagePayload()           {}
 
-// PackedWsjtxMessage contains multiple WSJT-X messages
-type PackedWsjtxMessage struct {
-	Messages  []*WsjtxMessage
+// PackedDecodeMessage contains multiple WSJT-X messages
+type PackedDecodeMessage struct {
+	Messages  []*Decode
 	Timestamp time.Time
 }
 
@@ -279,6 +281,58 @@ type Message interface {
 }
 
 // Implement isMessage for message types
-func (RigData) isMessage()            {}
-func (WsjtxMessage) isMessage()       {}
-func (PackedWsjtxMessage) isMessage() {}
+func (RigData) isMessage()             {}
+func (WsjtxMessage) isMessage()        {}
+func (PackedDecodeMessage) isMessage() {}
+
+// ClhQSOUploadStatusChanged carries internal CLH QSO upload status
+type ClhQSOUploadStatusChanged struct {
+	UploadedServices             map[string]bool
+	UploadedServicesErrorMessage map[string]string
+	OriginalCountryName          string
+	CqZone                       int32
+	ItuZone                      int32
+	Continent                    string
+	Latitude                     float32
+	Longitude                    float32
+	GmtOffset                    float32
+	Dxcc                         string
+	DateTimeOff                  time.Time
+	DxCall                       string
+	DxGrid                       string
+	TxFrequencyInHz              uint64
+	TxFrequencyInMeters          string
+	Mode                         string
+	ParentMode                   string
+	ReportSent                   string
+	ReportReceived               string
+	TxPower                      string
+	Comments                     string
+	Name                         string
+	DateTimeOn                   time.Time
+	OperatorCall                 string
+	MyCall                       string
+	MyGrid                       string
+	ExchangeSent                 string
+	ExchangeReceived             string
+	AdifPropagationMode          string
+	ClientId                     string
+	RawData                      string
+	FailReason                   string
+	UploadStatus                 int32
+	ForcedUpload                 bool
+}
+
+// ClhInternalMessage is an internal representation of CLH internal messages
+type ClhInternalMessage struct {
+	QsoUploadStatus *ClhQSOUploadStatusChanged
+	Timestamp       time.Time
+}
+
+func (ClhInternalMessage) isMessage() {}
+
+type PipeConnectionClosed struct {
+	Timestamp time.Time
+}
+
+func (PipeConnectionClosed) isMessage() {}

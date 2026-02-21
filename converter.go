@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260214"
+	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
 )
 
 // convertRigData converts protobuf RigData to internal RigData
@@ -319,21 +319,95 @@ func convertConfigure(pb *pbplugin.Configure) *Configure {
 	}
 }
 
-// convertPackedWsjtxMessage converts protobuf PackedWsjtxMessage to internal PackedWsjtxMessage
-func convertPackedWsjtxMessage(pb *pbplugin.PackedWsjtxMessage) *PackedWsjtxMessage {
+// convertPackedDecodeMessage converts protobuf PackedDecodeMessage to internal PackedDecodeMessage
+func convertPackedDecodeMessage(pb *pbplugin.PackedDecodeMessage) *PackedDecodeMessage {
 	timestamp := time.Time{}
 	if pb.Timestamp != nil {
 		timestamp = pb.Timestamp.AsTime()
 	}
 
-	messages := make([]*WsjtxMessage, len(pb.Messages))
+	messages := make([]*Decode, len(pb.Messages))
 	for i, msg := range pb.Messages {
-		converted := convertWsjtxMessage(msg)
+		converted := convertDecode(msg)
 		messages[i] = converted
 	}
 
-	return &PackedWsjtxMessage{
+	return &PackedDecodeMessage{
 		Messages:  messages,
 		Timestamp: timestamp,
 	}
+}
+
+// convertClhQSOUploadStatusChanged converts protobuf ClhQSOUploadStatusChanged to internal ClhQSOUploadStatusChanged
+func convertClhQSOUploadStatusChanged(pb *pbplugin.ClhQSOUploadStatusChanged) *ClhQSOUploadStatusChanged {
+	if pb == nil {
+		return nil
+	}
+
+	datetimeOff := time.Time{}
+	if pb.DateTimeOff != nil {
+		datetimeOff = pb.DateTimeOff.AsTime()
+	}
+
+	datetimeOn := time.Time{}
+	if pb.DateTimeOn != nil {
+		datetimeOn = pb.DateTimeOn.AsTime()
+	}
+
+	return &ClhQSOUploadStatusChanged{
+		UploadedServices:             pb.UploadedServices,
+		UploadedServicesErrorMessage: pb.UploadedServicesErrorMessage,
+		OriginalCountryName:          pb.OriginalCountryName,
+		CqZone:                       pb.CqZone,
+		ItuZone:                      pb.ItuZone,
+		Continent:                    pb.Continent,
+		Latitude:                     pb.Latitude,
+		Longitude:                    pb.Longitude,
+		GmtOffset:                    pb.GmtOffset,
+		Dxcc:                         pb.Dxcc,
+		DateTimeOff:                  datetimeOff,
+		DxCall:                       pb.DxCall,
+		DxGrid:                       pb.DxGrid,
+		TxFrequencyInHz:              pb.TxFrequencyInHz,
+		TxFrequencyInMeters:          pb.TxFrequencyInMeters,
+		Mode:                         pb.Mode,
+		ParentMode:                   pb.ParentMode,
+		ReportSent:                   pb.ReportSent,
+		ReportReceived:               pb.ReportReceived,
+		TxPower:                      pb.TxPower,
+		Comments:                     pb.Comments,
+		Name:                         pb.Name,
+		DateTimeOn:                   datetimeOn,
+		OperatorCall:                 pb.OperatorCall,
+		MyCall:                       pb.MyCall,
+		MyGrid:                       pb.MyGrid,
+		ExchangeSent:                 pb.ExchangeSent,
+		ExchangeReceived:             pb.ExchangeReceived,
+		AdifPropagationMode:          pb.AdifPropagationMode,
+		ClientId:                     pb.ClientId,
+		RawData:                      pb.RawData,
+		FailReason:                   pb.FailReason,
+		UploadStatus:                 int32(pb.UploadStatus),
+		ForcedUpload:                 pb.ForcedUpload,
+	}
+}
+
+// convertClhInternalMessage converts protobuf ClhInternalMessage to internal ClhInternalMessage
+func convertClhInternalMessage(pb *pbplugin.ClhInternalMessage) *ClhInternalMessage {
+	if pb == nil {
+		return nil
+	}
+
+	msg := &ClhInternalMessage{}
+
+	if pb.Timestamp != nil {
+		msg.Timestamp = pb.Timestamp.AsTime()
+	}
+
+	switch payload := pb.Payload.(type) {
+	case *pbplugin.ClhInternalMessage_QsoUploadStatus:
+		msg.QsoUploadStatus = convertClhQSOUploadStatusChanged(payload.QsoUploadStatus)
+	}
+
+	return msg
 }

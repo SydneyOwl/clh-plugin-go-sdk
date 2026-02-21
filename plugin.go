@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260214"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
 	"google.golang.org/protobuf/encoding/protodelim"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -22,8 +22,8 @@ type Option func(client *ClhClient) error
 
 func WithHeartbeatInterval(interval time.Duration) Option {
 	return func(client *ClhClient) error {
-		if interval < time.Second || interval > time.Second*10 {
-			return fmt.Errorf("heartbeat interval should btw 1s and 10s")
+		if interval < time.Second {
+			return fmt.Errorf("heartbeat interval should > 1s")
 		}
 
 		client.heartbeatInterval = interval
@@ -163,9 +163,12 @@ func (c *ClhClient) WaitMessage() (Message, error) {
 		return convertRigData(v), nil
 	case *plugin.WsjtxMessage:
 		return convertWsjtxMessage(v), nil
-	case *plugin.PackedWsjtxMessage:
-		return convertPackedWsjtxMessage(v), nil
-
+	case *plugin.PackedDecodeMessage:
+		return convertPackedDecodeMessage(v), nil
+	case *plugin.PipeConnectionClosed:
+		return &PipeConnectionClosed{Timestamp: v.Timestamp.AsTime()}, nil
+	case *plugin.ClhInternalMessage:
+		return convertClhInternalMessage(v), nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %T", msg)
 	}
