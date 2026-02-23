@@ -1,7 +1,7 @@
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/SydneyOwl/clh-proto/gen/go/v20260219 v20260219.0.0-20260221090154-a69ad07be888 h1:J5rq8eMYP5VX3Td45VnBBLzmIFQ5ox9Q1U9midNtYiQ=
-github.com/SydneyOwl/clh-proto/gen/go/v20260219 v20260219.0.0-20260221090154-a69ad07be888/go.mod h1:QoYQHNRrXukysxFYH6QIrXpSZkeFP11xG2Ld/Uyomw0=
+github.com/SydneyOwl/clh-proto/gen/go/v20260224 v20260224.0.0-20260223111404-e6f6e37c1bb6 h1:OZ0xUlEmLy4lZ/Z6gaqL8dO+aUxn8bfUIqCdTbxCcUA=
+github.com/SydneyOwl/clh-proto/gen/go/v20260224 v20260224.0.0-20260223111404-e6f6e37c1bb6/go.mod h1:gUakJ0G/IYs8U3HEBOgP/cWSvDc67B14uhD6Fj8+8Ag=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 golang.org/x/sys v0.10.0 h1:SqMFp9UcQJZa+pmYuAKjd9xq1f0j5rLcDIk0mj4qAsA=

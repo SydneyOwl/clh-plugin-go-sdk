@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
+	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
 )
 
 // convertRigData converts protobuf RigData to internal RigData
@@ -389,6 +389,7 @@ func convertClhQSOUploadStatusChanged(pb *pbplugin.ClhQSOUploadStatusChanged) *C
 		FailReason:                   pb.FailReason,
 		UploadStatus:                 int32(pb.UploadStatus),
 		ForcedUpload:                 pb.ForcedUpload,
+		Uuid:                         pb.Uuid,
 	}
 }
 

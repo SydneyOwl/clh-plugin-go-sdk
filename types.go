@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
 )
 
 type PluginCapability int32
@@ -321,6 +321,7 @@ type ClhQSOUploadStatusChanged struct {
 	FailReason                   string
 	UploadStatus                 int32
 	ForcedUpload                 bool
+	Uuid                         string
 }
 
 // ClhInternalMessage is an internal representation of CLH internal messages

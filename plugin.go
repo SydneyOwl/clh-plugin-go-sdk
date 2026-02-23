@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260219"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
 	"google.golang.org/protobuf/encoding/protodelim"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
