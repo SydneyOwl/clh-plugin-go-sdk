@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260307"
 	"google.golang.org/protobuf/encoding/protodelim"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -16,6 +16,8 @@ import (
 
 const (
 	DefaultHeartbeatInterval = time.Second * 5
+	DefaultSdkName           = "clh-plugin-go-sdk"
+	DefaultSdkVersion        = "next"
 )
 
 type Option func(client *ClhClient) error
@@ -31,12 +33,80 @@ func WithHeartbeatInterval(interval time.Duration) Option {
 	}
 }
 
+func WithMetadata(metadata map[string]string) Option {
+	return func(client *ClhClient) error {
+		if client.pluginCfg.Metadata == nil {
+			client.pluginCfg.Metadata = make(map[string]string)
+		}
+		for k, v := range metadata {
+			client.pluginCfg.Metadata[k] = v
+		}
+		return nil
+	}
+}
+
+func WithMetadataEntry(key, value string) Option {
+	return func(client *ClhClient) error {
+		if key == "" {
+			return fmt.Errorf("metadata key should not be empty")
+		}
+		if client.pluginCfg.Metadata == nil {
+			client.pluginCfg.Metadata = make(map[string]string)
+		}
+		client.pluginCfg.Metadata[key] = value
+		return nil
+	}
+}
+
+func WithSdkInfo(name, version string) Option {
+	return func(client *ClhClient) error {
+		client.pluginCfg.SdkName = name
+		client.pluginCfg.SdkVersion = version
+		return nil
+	}
+}
+
+func WithWsjtxSubscription(subscription WsjtxSubscription) Option {
+	return func(client *ClhClient) error {
+		subCopy := subscription
+		if subscription.MessageTypes != nil {
+			subCopy.MessageTypes = append([]MessageType{}, subscription.MessageTypes...)
+		}
+		client.pluginCfg.WsjtxSubscription = &subCopy
+		return nil
+	}
+}
+
+func WithRawDecodeDelivery() Option {
+	return func(client *ClhClient) error {
+		if client.pluginCfg.WsjtxSubscription == nil {
+			client.pluginCfg.WsjtxSubscription = &WsjtxSubscription{}
+		}
+		client.pluginCfg.WsjtxSubscription.DecodeDeliveryMode = DecodeDeliveryMode_REALTIME
+		return nil
+	}
+}
+
+func WithWsjtxMessageFilter(types ...MessageType) Option {
+	return func(client *ClhClient) error {
+		if client.pluginCfg.WsjtxSubscription == nil {
+			client.pluginCfg.WsjtxSubscription = &WsjtxSubscription{}
+		}
+		client.pluginCfg.WsjtxSubscription.MessageTypes = append([]MessageType{}, types...)
+		return nil
+	}
+}
+
 type PluginConfig struct {
-	Uuid         string
-	Name         string
-	Version      string
-	Description  string
-	Capabilities []PluginCapability
+	Uuid              string
+	Name              string
+	Version           string
+	Description       string
+	Capabilities      []PluginCapability
+	Metadata          map[string]string
+	SdkName           string
+	SdkVersion        string
+	WsjtxSubscription *WsjtxSubscription
 }
 
 type ClhClient struct {
@@ -52,6 +122,7 @@ type ClhClient struct {
 
 	pluginCfg         *PluginConfig
 	heartbeatInterval time.Duration
+	serverInfo        *PipeServerInfo
 }
 
 func NewClient(config PluginConfig, opts ...Option) (*ClhClient, error) {
@@ -71,6 +142,16 @@ func NewClient(config PluginConfig, opts ...Option) (*ClhClient, error) {
 		return nil, fmt.Errorf("description shouldn't be empty")
 	}
 
+	if config.Metadata == nil {
+		config.Metadata = make(map[string]string)
+	}
+	if config.SdkName == "" {
+		config.SdkName = DefaultSdkName
+	}
+	if config.SdkVersion == "" {
+		config.SdkVersion = DefaultSdkVersion
+	}
+
 	c := &ClhClient{
 		conn:              nil,
 		reader:            nil,
@@ -82,22 +163,45 @@ func NewClient(config PluginConfig, opts ...Option) (*ClhClient, error) {
 	c.ctx = ctx
 	c.cancel = cancelFunc
 
-	if opts != nil {
-		for _, opt := range opts {
-			if opt == nil {
-				continue
-			}
-			if err := opt(c); err != nil {
-				return nil, fmt.Errorf("apply option failed: %w", err)
-			}
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		if err := opt(c); err != nil {
+			return nil, fmt.Errorf("apply option failed: %w", err)
 		}
 	}
+
 	return c, nil
+}
+
+func toPbWsjtxSubscription(subscription *WsjtxSubscription) *plugin.PipeWsjtxSubscription {
+	if subscription == nil {
+		return nil
+	}
+
+	pbSubscription := &plugin.PipeWsjtxSubscription{
+		DecodeDeliveryMode: plugin.DecodeDeliveryMode(subscription.DecodeDeliveryMode),
+	}
+
+	if len(subscription.MessageTypes) > 0 {
+		pbTypes := make([]plugin.MessageType, len(subscription.MessageTypes))
+		for i, v := range subscription.MessageTypes {
+			pbTypes[i] = plugin.MessageType(v)
+		}
+		pbSubscription.MessageTypes = pbTypes
+	}
+
+	return pbSubscription
 }
 
 func (c *ClhClient) Connect() error {
 	if c.closed {
 		return fmt.Errorf("you are not allowd to call connect on a closed client. please create a new client instead")
+	}
+
+	if c.conn != nil {
+		return fmt.Errorf("client is already connected")
 	}
 
 	conn, err := dialPipe()
@@ -109,37 +213,64 @@ func (c *ClhClient) Connect() error {
 	c.reader = bufio.NewReader(conn)
 
 	registerReq := &plugin.PipeRegisterPluginReq{
-		Uuid:        c.pluginCfg.Uuid,
-		Name:        c.pluginCfg.Name,
-		Version:     c.pluginCfg.Version,
-		Description: c.pluginCfg.Description,
+		Uuid:              c.pluginCfg.Uuid,
+		Name:              c.pluginCfg.Name,
+		Version:           c.pluginCfg.Version,
+		Description:       c.pluginCfg.Description,
+		Metadata:          c.pluginCfg.Metadata,
+		SdkName:           c.pluginCfg.SdkName,
+		SdkVersion:        c.pluginCfg.SdkVersion,
+		WsjtxSubscription: toPbWsjtxSubscription(c.pluginCfg.WsjtxSubscription),
+		Timestamp:         timestamppb.Now(),
 	}
 
 	tmp := make([]plugin.Capability, len(c.pluginCfg.Capabilities))
-
 	for i, v := range c.pluginCfg.Capabilities {
 		tmp[i] = plugin.Capability(v)
 	}
-
 	registerReq.Capabilities = tmp
 
 	_, err = protodelim.MarshalTo(conn, registerReq)
 	if err != nil {
+		_ = conn.Close()
+		c.conn = nil
+		c.reader = nil
 		return err
 	}
 
 	var resp plugin.PipeRegisterPluginResp
 	err = protodelim.UnmarshalFrom(c.reader, &resp)
 	if err != nil {
+		_ = conn.Close()
+		c.conn = nil
+		c.reader = nil
 		return err
 	}
 	if !resp.Success {
+		_ = conn.Close()
+		c.conn = nil
+		c.reader = nil
 		return fmt.Errorf("register plugin failed: %s", resp.Message)
 	}
+
+	c.mu.Lock()
+	c.serverInfo = convertPipeServerInfo(resp.ServerInfo)
+	c.mu.Unlock()
 
 	c.wg.Add(1)
 	go c.heartbeat()
 	return nil
+}
+
+func (c *ClhClient) GetServerInfo() *PipeServerInfo {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.serverInfo == nil {
+		return nil
+	}
+
+	infoCopy := *c.serverInfo
+	return &infoCopy
 }
 
 func (c *ClhClient) WaitMessage() (Message, error) {
@@ -169,6 +300,8 @@ func (c *ClhClient) WaitMessage() (Message, error) {
 		return &PipeConnectionClosed{Timestamp: v.Timestamp.AsTime()}, nil
 	case *plugin.ClhInternalMessage:
 		return convertClhInternalMessage(v), nil
+	case *plugin.PipeControlResponse:
+		return convertPipeControlResponse(v), nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %T", msg)
 	}
@@ -186,11 +319,52 @@ func (c *ClhClient) heartbeat() {
 				Uuid:      c.pluginCfg.Uuid,
 				Timestamp: timestamppb.Now(),
 			}
-			_ = c.writeMessageToPipe(hb)
+			_ = c.writeAnyMessageToPipe(hb)
 		case <-c.ctx.Done():
 			return
 		}
 	}
+}
+
+func (c *ClhClient) SendControlRequest(
+	requestID string,
+	command PipeControlCommand,
+	subscription *WsjtxSubscription,
+	arguments map[string]string,
+) error {
+	req := &plugin.PipeControlRequest{
+		RequestId:         requestID,
+		Command:           plugin.PipeControlCommand(command),
+		WsjtxSubscription: toPbWsjtxSubscription(subscription),
+		Arguments:         arguments,
+		Timestamp:         timestamppb.Now(),
+	}
+
+	return c.writeAnyMessageToPipe(req)
+}
+
+func (c *ClhClient) RequestServerInfo(requestID string) error {
+	return c.SendControlRequest(requestID, PipeControlCommand_GET_SERVER_INFO, nil, nil)
+}
+
+func (c *ClhClient) RequestConnectedPlugins(requestID string) error {
+	return c.SendControlRequest(requestID, PipeControlCommand_GET_CONNECTED_PLUGINS, nil, nil)
+}
+
+func (c *ClhClient) UpdateWsjtxSubscription(requestID string, subscription WsjtxSubscription) error {
+	return c.SendControlRequest(requestID, PipeControlCommand_SET_WSJTX_SUBSCRIPTION, &subscription, nil)
+}
+
+func (c *ClhClient) SendPluginLog(level PipePluginLogLevel, message string, fields map[string]string) error {
+	logReq := &plugin.PipePluginLog{
+		Uuid:      c.pluginCfg.Uuid,
+		Level:     plugin.PipePluginLogLevel(level),
+		Message:   message,
+		Fields:    fields,
+		Timestamp: timestamppb.Now(),
+	}
+
+	return c.writeAnyMessageToPipe(logReq)
 }
 
 func (c *ClhClient) Close() error {
@@ -210,18 +384,31 @@ func (c *ClhClient) Close() error {
 			return fmt.Errorf("close pipe failed: %w", err)
 		}
 		c.conn = nil
+		c.reader = nil
 	}
 	return nil
 }
 
-func (c *ClhClient) writeMessageToPipe(msg protoreflect.ProtoMessage) error {
+func (c *ClhClient) writeRawMessageToPipe(msg protoreflect.ProtoMessage) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	_, err := protodelim.MarshalTo(c.conn, msg)
+	if c.conn == nil {
+		return fmt.Errorf("connection is not established")
+	}
 
+	_, err := protodelim.MarshalTo(c.conn, msg)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *ClhClient) writeAnyMessageToPipe(msg protoreflect.ProtoMessage) error {
+	anyMsg, err := anypb.New(msg)
+	if err != nil {
+		return err
+	}
+
+	return c.writeRawMessageToPipe(anyMsg)
 }

@@ -81,7 +81,7 @@ func TestWithHeartbeatInterval(t *testing.T) {
 	}
 
 	// Test invalid interval
-	_, err = NewClient(config, WithHeartbeatInterval(15*time.Second))
+	_, err = NewClient(config, WithHeartbeatInterval(500*time.Millisecond))
 	if err == nil {
 		t.Error("Expected error for invalid heartbeat interval")
 	}

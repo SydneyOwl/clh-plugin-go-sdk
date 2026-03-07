@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
+	pbplugin "github.com/SydneyOwl/clh-proto/gen/go/v20260307"
 )
 
 // convertRigData converts protobuf RigData to internal RigData
@@ -393,6 +393,155 @@ func convertClhQSOUploadStatusChanged(pb *pbplugin.ClhQSOUploadStatusChanged) *C
 	}
 }
 
+func convertWsjtxSubscription(pb *pbplugin.PipeWsjtxSubscription) *WsjtxSubscription {
+	if pb == nil {
+		return nil
+	}
+
+	types := make([]MessageType, len(pb.MessageTypes))
+	for i, t := range pb.MessageTypes {
+		types[i] = MessageType(t)
+	}
+
+	return &WsjtxSubscription{
+		MessageTypes:       types,
+		DecodeDeliveryMode: DecodeDeliveryMode(pb.DecodeDeliveryMode),
+	}
+}
+
+func convertPipeServerInfo(pb *pbplugin.PipeServerInfo) *PipeServerInfo {
+	if pb == nil {
+		return nil
+	}
+
+	return &PipeServerInfo{
+		ClhInstanceId:        pb.ClhInstanceId,
+		ClhVersion:           pb.ClhVersion,
+		KeepaliveTimeoutSec:  pb.KeepaliveTimeoutSec,
+		ConnectedPluginCount: pb.ConnectedPluginCount,
+	}
+}
+
+func convertPipePluginInfo(pb *pbplugin.PipePluginInfo) *PipePluginInfo {
+	if pb == nil {
+		return nil
+	}
+
+	registeredAt := time.Time{}
+	if pb.RegisteredAt != nil {
+		registeredAt = pb.RegisteredAt.AsTime()
+	}
+
+	lastHeartbeat := time.Time{}
+	if pb.LastHeartbeat != nil {
+		lastHeartbeat = pb.LastHeartbeat.AsTime()
+	}
+
+	caps := make([]PluginCapability, len(pb.Capabilities))
+	for i, c := range pb.Capabilities {
+		caps[i] = PluginCapability(c)
+	}
+
+	metadata := make(map[string]string, len(pb.Metadata))
+	for k, v := range pb.Metadata {
+		metadata[k] = v
+	}
+
+	return &PipePluginInfo{
+		Uuid:              pb.Uuid,
+		Name:              pb.Name,
+		Version:           pb.Version,
+		Description:       pb.Description,
+		Capabilities:      caps,
+		Metadata:          metadata,
+		WsjtxSubscription: convertWsjtxSubscription(pb.WsjtxSubscription),
+		RegisteredAt:      registeredAt,
+		LastHeartbeat:     lastHeartbeat,
+	}
+}
+
+func convertPipePluginList(pb *pbplugin.PipePluginList) *PipePluginList {
+	if pb == nil {
+		return nil
+	}
+
+	plugins := make([]*PipePluginInfo, len(pb.Plugins))
+	for i, p := range pb.Plugins {
+		plugins[i] = convertPipePluginInfo(p)
+	}
+
+	return &PipePluginList{
+		Plugins: plugins,
+	}
+}
+
+func convertPipeControlResponse(pb *pbplugin.PipeControlResponse) *PipeControlResponse {
+	if pb == nil {
+		return nil
+	}
+
+	timestamp := time.Time{}
+	if pb.Timestamp != nil {
+		timestamp = pb.Timestamp.AsTime()
+	}
+
+	resp := &PipeControlResponse{
+		RequestID: pb.RequestId,
+		Success:   pb.Success,
+		Message:   pb.Message,
+		Timestamp: timestamp,
+	}
+
+	switch payload := pb.Payload.(type) {
+	case *pbplugin.PipeControlResponse_ServerInfo:
+		resp.ServerInfo = convertPipeServerInfo(payload.ServerInfo)
+	case *pbplugin.PipeControlResponse_ConnectedPlugins:
+		resp.ConnectedPlugins = convertPipePluginList(payload.ConnectedPlugins)
+	case *pbplugin.PipeControlResponse_WsjtxSubscription:
+		resp.WsjtxSubscription = convertWsjtxSubscription(payload.WsjtxSubscription)
+	}
+
+	return resp
+}
+
+func convertClhPluginLifecycleChanged(pb *pbplugin.ClhPluginLifecycleChanged) *ClhPluginLifecycleChanged {
+	if pb == nil {
+		return nil
+	}
+
+	eventTime := time.Time{}
+	if pb.EventTime != nil {
+		eventTime = pb.EventTime.AsTime()
+	}
+
+	return &ClhPluginLifecycleChanged{
+		PluginUuid:    pb.PluginUuid,
+		PluginName:    pb.PluginName,
+		PluginVersion: pb.PluginVersion,
+		Reason:        pb.Reason,
+		EventType:     ClhPluginLifecycleEventType(pb.EventType),
+		EventTime:     eventTime,
+	}
+}
+
+func convertClhServerStatusChanged(pb *pbplugin.ClhServerStatusChanged) *ClhServerStatusChanged {
+	if pb == nil {
+		return nil
+	}
+
+	eventTime := time.Time{}
+	if pb.EventTime != nil {
+		eventTime = pb.EventTime.AsTime()
+	}
+
+	return &ClhServerStatusChanged{
+		ClhInstanceId:        pb.ClhInstanceId,
+		ClhVersion:           pb.ClhVersion,
+		ConnectedPluginCount: pb.ConnectedPluginCount,
+		EventTime:            eventTime,
+	}
+}
+
 // convertClhInternalMessage converts protobuf ClhInternalMessage to internal ClhInternalMessage
 func convertClhInternalMessage(pb *pbplugin.ClhInternalMessage) *ClhInternalMessage {
 	if pb == nil {
@@ -408,6 +557,10 @@ func convertClhInternalMessage(pb *pbplugin.ClhInternalMessage) *ClhInternalMess
 	switch payload := pb.Payload.(type) {
 	case *pbplugin.ClhInternalMessage_QsoUploadStatus:
 		msg.QsoUploadStatus = convertClhQSOUploadStatusChanged(payload.QsoUploadStatus)
+	case *pbplugin.ClhInternalMessage_PluginLifecycle:
+		msg.PluginLifecycle = convertClhPluginLifecycleChanged(payload.PluginLifecycle)
+	case *pbplugin.ClhInternalMessage_ServerStatus:
+		msg.ServerStatus = convertClhServerStatusChanged(payload.ServerStatus)
 	}
 
 	return msg

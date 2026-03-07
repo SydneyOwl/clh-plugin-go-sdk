@@ -3,7 +3,7 @@ package pluginsdk
 import (
 	"time"
 
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260224"
+	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260307"
 )
 
 type PluginCapability int32
@@ -12,6 +12,7 @@ const (
 	CapabilityWsjtxMessage       PluginCapability = PluginCapability(plugin.Capability_WSJTX_MESSAGE)
 	CapabilityRigData            PluginCapability = PluginCapability(plugin.Capability_RIG_DATA)
 	CapabilityClhInternalMessage PluginCapability = PluginCapability(plugin.Capability_CLH_INTERNAL_DATA)
+	CapabilityPipeControl        PluginCapability = PluginCapability(plugin.Capability_PIPE_CONTROL)
 )
 
 // RigData contains radio rig information
@@ -49,6 +50,39 @@ const (
 	MessageType_SWITCH_CONFIGURATION MessageType = 14
 	MessageType_CONFIGURE            MessageType = 15
 )
+
+type DecodeDeliveryMode int32
+
+const (
+	DecodeDeliveryMode_UNSPECIFIED DecodeDeliveryMode = 0
+	DecodeDeliveryMode_BATCHED     DecodeDeliveryMode = 1
+	DecodeDeliveryMode_REALTIME    DecodeDeliveryMode = 2
+	DecodeDeliveryMode_BOTH        DecodeDeliveryMode = 3
+)
+
+type PipeControlCommand int32
+
+const (
+	PipeControlCommand_UNSPECIFIED            PipeControlCommand = 0
+	PipeControlCommand_GET_SERVER_INFO        PipeControlCommand = 1
+	PipeControlCommand_GET_CONNECTED_PLUGINS  PipeControlCommand = 2
+	PipeControlCommand_SET_WSJTX_SUBSCRIPTION PipeControlCommand = 3
+)
+
+type PipePluginLogLevel int32
+
+const (
+	PipePluginLogLevel_UNSPECIFIED PipePluginLogLevel = 0
+	PipePluginLogLevel_DEBUG       PipePluginLogLevel = 1
+	PipePluginLogLevel_INFO        PipePluginLogLevel = 2
+	PipePluginLogLevel_WARN        PipePluginLogLevel = 3
+	PipePluginLogLevel_ERROR       PipePluginLogLevel = 4
+)
+
+type WsjtxSubscription struct {
+	MessageTypes       []MessageType
+	DecodeDeliveryMode DecodeDeliveryMode
+}
 
 // SpecialOperationMode defines special operation modes
 type SpecialOperationMode int32
@@ -324,13 +358,76 @@ type ClhQSOUploadStatusChanged struct {
 	Uuid                         string
 }
 
+type ClhPluginLifecycleEventType int32
+
+const (
+	ClhPluginLifecycleEventType_UNSPECIFIED  ClhPluginLifecycleEventType = 0
+	ClhPluginLifecycleEventType_CONNECTED    ClhPluginLifecycleEventType = 1
+	ClhPluginLifecycleEventType_DISCONNECTED ClhPluginLifecycleEventType = 2
+	ClhPluginLifecycleEventType_TIMEOUT      ClhPluginLifecycleEventType = 3
+	ClhPluginLifecycleEventType_REPLACED     ClhPluginLifecycleEventType = 4
+)
+
+type ClhPluginLifecycleChanged struct {
+	PluginUuid    string
+	PluginName    string
+	PluginVersion string
+	Reason        string
+	EventType     ClhPluginLifecycleEventType
+	EventTime     time.Time
+}
+
+type ClhServerStatusChanged struct {
+	ClhInstanceId        string
+	ClhVersion           string
+	ConnectedPluginCount uint32
+	EventTime            time.Time
+}
+
 // ClhInternalMessage is an internal representation of CLH internal messages
 type ClhInternalMessage struct {
 	QsoUploadStatus *ClhQSOUploadStatusChanged
+	PluginLifecycle *ClhPluginLifecycleChanged
+	ServerStatus    *ClhServerStatusChanged
 	Timestamp       time.Time
 }
 
 func (ClhInternalMessage) isMessage() {}
+
+type PipeServerInfo struct {
+	ClhInstanceId        string
+	ClhVersion           string
+	KeepaliveTimeoutSec  uint32
+	ConnectedPluginCount uint32
+}
+
+type PipePluginInfo struct {
+	Uuid              string
+	Name              string
+	Version           string
+	Description       string
+	Capabilities      []PluginCapability
+	Metadata          map[string]string
+	WsjtxSubscription *WsjtxSubscription
+	RegisteredAt      time.Time
+	LastHeartbeat     time.Time
+}
+
+type PipePluginList struct {
+	Plugins []*PipePluginInfo
+}
+
+type PipeControlResponse struct {
+	RequestID         string
+	Success           bool
+	Message           string
+	ServerInfo        *PipeServerInfo
+	ConnectedPlugins  *PipePluginList
+	WsjtxSubscription *WsjtxSubscription
+	Timestamp         time.Time
+}
+
+func (PipeControlResponse) isMessage() {}
 
 type PipeConnectionClosed struct {
 	Timestamp time.Time

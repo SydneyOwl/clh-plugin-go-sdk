@@ -10,11 +10,10 @@ go get github.com/SydneyOwl/clh-plugin-go-sdk
 
 ## Quick start
 
-Please note that for performance considerations, 
-Decode type messages are not sent in real-time. 
-Instead, they are batched and sent as packed WSJT-X 
-messages after waiting for all WSJT-X decoding to complete
-(when no new messages are received within 3 seconds).
+Decode messages can now be configured per-plugin:
+- `BATCHED` (default): packed decode frames.
+- `REALTIME`: every decode in real-time.
+- `BOTH`: receive both.
 
 ### Create a client
 ```go
@@ -38,6 +37,10 @@ func main() {
 			pluginsdk.CapabilityWsjtxMessage, // Declare support for WSJT-X messages
 			pluginsdk.CapabilityRigData,      // Declare support for radio data
 			pluginsdk.CapabilityClhInternalMessage, // Declare support for internal message data
+			pluginsdk.CapabilityPipeControl, // Enable control requests (server info, plugin list, etc.)
+		},
+		Metadata: map[string]string{
+			"role": "example",
 		},
 	}
 
@@ -45,6 +48,11 @@ func main() {
 	client, err := pluginsdk.NewClient(
 		config,
 		pluginsdk.WithHeartbeatInterval(3*time.Second), // Custom heartbeat interval
+		pluginsdk.WithRawDecodeDelivery(),              // Receive decode in realtime
+		pluginsdk.WithWsjtxMessageFilter(
+			pluginsdk.MessageType_DECODE,
+			pluginsdk.MessageType_STATUS,
+		),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
@@ -56,6 +64,7 @@ func main() {
 	}
 
 	log.Println("Plugin successfully connected to CLH")
+	_ = client.RequestServerInfo("req-server-info")
 
 	// then you can receive messages by calling WaitMessage.
 	// WaitMessage is blocking, you can receive and process messages in a goroutine.
@@ -85,6 +94,9 @@ func main() {
 			spew.Dump(v)
 
 		case *pluginsdk.ClhInternalMessage:
+			spew.Dump(v)
+
+		case *pluginsdk.PipeControlResponse:
 			spew.Dump(v)
 
 		default:
