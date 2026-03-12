@@ -1,142 +1,348 @@
-package pluginsdk
+package clhplugin
 
-import (
-	"time"
+import "time"
 
-	plugin "github.com/SydneyOwl/clh-proto/gen/go/v20260307"
-)
-
-type PluginCapability int32
+type EnvelopeKind int32
 
 const (
-	CapabilityWsjtxMessage       PluginCapability = PluginCapability(plugin.Capability_WSJTX_MESSAGE)
-	CapabilityRigData            PluginCapability = PluginCapability(plugin.Capability_RIG_DATA)
-	CapabilityClhInternalMessage PluginCapability = PluginCapability(plugin.Capability_CLH_INTERNAL_DATA)
-	CapabilityPipeControl        PluginCapability = PluginCapability(plugin.Capability_PIPE_CONTROL)
+	EnvelopeKindUnspecified EnvelopeKind = 0
+	EnvelopeKindEvent       EnvelopeKind = 1
+	EnvelopeKindQuery       EnvelopeKind = 2
+	EnvelopeKindCommand     EnvelopeKind = 3
+	EnvelopeKindResponse    EnvelopeKind = 4
 )
 
-// RigData contains radio rig information
+type EnvelopeTopic int32
+
+const (
+	EnvelopeTopicUnspecified               EnvelopeTopic = 0
+	EnvelopeTopicEventServerStatus         EnvelopeTopic = 1
+	EnvelopeTopicEventPluginLifecycle      EnvelopeTopic = 2
+	EnvelopeTopicEventWsjtxMessage         EnvelopeTopic = 3
+	EnvelopeTopicEventWsjtxDecodeRealtime  EnvelopeTopic = 4
+	EnvelopeTopicEventWsjtxDecodeBatch     EnvelopeTopic = 5
+	EnvelopeTopicEventRigData              EnvelopeTopic = 6
+	EnvelopeTopicEventQsoUploadStatus      EnvelopeTopic = 7
+	EnvelopeTopicEventQSOQueueStatus       EnvelopeTopic = 10
+	EnvelopeTopicEventSettingsChanged      EnvelopeTopic = 11
+	EnvelopeTopicEventPluginTelemetry      EnvelopeTopic = 12
+	EnvelopeTopicQueryServerInfo           EnvelopeTopic = 100
+	EnvelopeTopicQueryConnectedPlugins     EnvelopeTopic = 101
+	EnvelopeTopicQueryRuntimeSnapshot      EnvelopeTopic = 102
+	EnvelopeTopicQueryRigSnapshot          EnvelopeTopic = 103
+	EnvelopeTopicQueryUDPSnapshot          EnvelopeTopic = 104
+	EnvelopeTopicQueryQSOQueueSnapshot     EnvelopeTopic = 105
+	EnvelopeTopicQuerySettingsSnapshot     EnvelopeTopic = 106
+	EnvelopeTopicQueryPluginTelemetry      EnvelopeTopic = 107
+	EnvelopeTopicCommandShowMainWindow     EnvelopeTopic = 200
+	EnvelopeTopicCommandHideMainWindow     EnvelopeTopic = 201
+	EnvelopeTopicCommandOpenWindow         EnvelopeTopic = 202
+	EnvelopeTopicCommandSendNotification   EnvelopeTopic = 203
+	EnvelopeTopicCommandToggleUDPServer    EnvelopeTopic = 204
+	EnvelopeTopicCommandStartRigBackend    EnvelopeTopic = 205
+	EnvelopeTopicCommandStopRigBackend     EnvelopeTopic = 206
+	EnvelopeTopicCommandRestartRigBackend  EnvelopeTopic = 207
+	EnvelopeTopicCommandTriggerQSOReupload EnvelopeTopic = 208
+	EnvelopeTopicCommandUpdateSettings     EnvelopeTopic = 209
+	EnvelopeTopicCommandSubscribeEvents    EnvelopeTopic = 210
+)
+
+type NotificationLevel int32
+
+const (
+	NotificationLevelUnspecified NotificationLevel = 0
+	NotificationLevelInfo        NotificationLevel = 1
+	NotificationLevelSuccess     NotificationLevel = 2
+	NotificationLevelWarning     NotificationLevel = 3
+	NotificationLevelError       NotificationLevel = 4
+)
+
+type WsjtxMessageType int32
+
+const (
+	WsjtxMessageTypeHeartbeat           WsjtxMessageType = 0
+	WsjtxMessageTypeStatus              WsjtxMessageType = 1
+	WsjtxMessageTypeDecode              WsjtxMessageType = 2
+	WsjtxMessageTypeClear               WsjtxMessageType = 3
+	WsjtxMessageTypeReply               WsjtxMessageType = 4
+	WsjtxMessageTypeQSOLogged           WsjtxMessageType = 5
+	WsjtxMessageTypeClose               WsjtxMessageType = 6
+	WsjtxMessageTypeReplay              WsjtxMessageType = 7
+	WsjtxMessageTypeHaltTx              WsjtxMessageType = 8
+	WsjtxMessageTypeFreeText            WsjtxMessageType = 9
+	WsjtxMessageTypeWSPRDecode          WsjtxMessageType = 10
+	WsjtxMessageTypeLocation            WsjtxMessageType = 11
+	WsjtxMessageTypeLoggedADIF          WsjtxMessageType = 12
+	WsjtxMessageTypeHighlightCallsign   WsjtxMessageType = 13
+	WsjtxMessageTypeSwitchConfiguration WsjtxMessageType = 14
+	WsjtxMessageTypeConfigure           WsjtxMessageType = 15
+)
+
+type SpecialOperationMode int32
+
+const (
+	SpecialOperationModeNone     SpecialOperationMode = 0
+	SpecialOperationModeNAVHF    SpecialOperationMode = 1
+	SpecialOperationModeEUVHF    SpecialOperationMode = 2
+	SpecialOperationModeFieldDay SpecialOperationMode = 3
+	SpecialOperationModeRTTYRU   SpecialOperationMode = 4
+	SpecialOperationModeWWDIGI   SpecialOperationMode = 5
+	SpecialOperationModeFox      SpecialOperationMode = 6
+	SpecialOperationModeHound    SpecialOperationMode = 7
+)
+
+type ClearWindow int32
+
+const (
+	ClearWindowBandActivity ClearWindow = 0
+	ClearWindowRxFrequency  ClearWindow = 1
+	ClearWindowBoth         ClearWindow = 2
+)
+
+type UploadStatus int32
+
+const (
+	UploadStatusUnspecified UploadStatus = 0
+	UploadStatusPending     UploadStatus = 1
+	UploadStatusUploading   UploadStatus = 2
+	UploadStatusSuccess     UploadStatus = 3
+	UploadStatusFail        UploadStatus = 4
+	UploadStatusIgnored     UploadStatus = 5
+)
+
+type PluginLifecycleEventType int32
+
+const (
+	PluginLifecycleEventUnspecified  PluginLifecycleEventType = 0
+	PluginLifecycleEventConnected    PluginLifecycleEventType = 1
+	PluginLifecycleEventDisconnected PluginLifecycleEventType = 2
+	PluginLifecycleEventTimeout      PluginLifecycleEventType = 3
+	PluginLifecycleEventReplaced     PluginLifecycleEventType = 4
+)
+
+type ServiceRunStatus int32
+
+const (
+	ServiceRunStatusUnspecified ServiceRunStatus = 0
+	ServiceRunStatusStarting    ServiceRunStatus = 1
+	ServiceRunStatusRunning     ServiceRunStatus = 2
+	ServiceRunStatusStopped     ServiceRunStatus = 3
+	ServiceRunStatusError       ServiceRunStatus = 4
+)
+
+type ControllableWindow string
+
+const (
+	WindowSettings     ControllableWindow = "SettingsWindow"
+	WindowAbout        ControllableWindow = "AboutWindow"
+	WindowQSOAssistant ControllableWindow = "QSOAssistantWindow"
+	WindowStationStats ControllableWindow = "StationStatisticWindow"
+	WindowPolarChart   ControllableWindow = "PolarChartWindow"
+)
+
+type PluginManifest struct {
+	UUID              string
+	Name              string
+	Version           string
+	Description       string
+	Metadata          map[string]string
+	EventSubscription *EventSubscription
+	SDKName           string
+	SDKVersion        string
+}
+
+type EventSubscription struct {
+	Topics []EnvelopeTopic
+}
+
+type NotificationCommand struct {
+	Level   NotificationLevel
+	Title   string
+	Message string
+}
+
+type SettingsPatch struct {
+	Values map[string]string
+}
+
+type PluginTelemetry struct {
+	PluginUUID           string
+	ReceivedMessageCount uint64
+	SentMessageCount     uint64
+	ControlRequestCount  uint64
+	ControlErrorCount    uint64
+	LastRoundtripMs      uint32
+	UpdatedAt            time.Time
+}
+
+type RigSnapshot struct {
+	Provider       string
+	Endpoint       string
+	ServiceRunning bool
+	RigModel       string
+	TXFrequencyHz  uint64
+	RXFrequencyHz  uint64
+	TXMode         string
+	RXMode         string
+	Split          bool
+	Power          uint32
+	SampledAt      time.Time
+}
+
+type UDPSnapshot struct {
+	ServerRunning bool
+	BindAddress   string
+	SampledAt     time.Time
+}
+
+type QSOQueueSnapshot struct {
+	Details   []QSODetail
+	SampledAt time.Time
+}
+
+type SettingsSnapshot struct {
+	InstanceName         string
+	Language             string
+	EnablePlugin         bool
+	DisableAllCharts     bool
+	MyMaidenheadGrid     string
+	AutoQSOUploadEnabled bool
+	AutoRigUploadEnabled bool
+	EnableUDPServer      bool
+	SampledAt            time.Time
+}
+
+type RuntimeSnapshot struct {
+	ServerInfo       ServerInfo
+	RigSnapshot      RigSnapshot
+	UDPSnapshot      UDPSnapshot
+	SettingsSnapshot SettingsSnapshot
+	PluginTelemetry  []PluginTelemetry
+	SampledAt        time.Time
+}
+
+type PluginInfo struct {
+	UUID              string
+	Name              string
+	Version           string
+	Description       string
+	Metadata          map[string]string
+	RegisteredAt      time.Time
+	LastHeartbeat     time.Time
+	EventSubscription EventSubscription
+	Telemetry         PluginTelemetry
+}
+
+type PluginList struct {
+	Plugins []PluginInfo
+}
+
+type ServerInfo struct {
+	InstanceID           string
+	Version              string
+	KeepaliveTimeoutSec  uint32
+	ConnectedPluginCount uint32
+	UptimeSec            uint64
+}
+
+type RegisterResponse struct {
+	Success    bool
+	Message    string
+	InstanceID string
+	ServerInfo ServerInfo
+	Timestamp  time.Time
+}
+
+type InboundKind string
+
+const (
+	InboundKindUnknown          InboundKind = "unknown"
+	InboundKindRigData          InboundKind = "rig_data"
+	InboundKindCLHInternal      InboundKind = "clh_internal"
+	InboundKindEnvelope         InboundKind = "envelope"
+	InboundKindConnectionClosed InboundKind = "connection_closed"
+)
+
+type Message struct {
+	Kind             InboundKind
+	Timestamp        time.Time
+	RigData          *RigData
+	CLHInternal      *CLHInternalMessage
+	Envelope         *Envelope
+	ConnectionClosed *ConnectionClosed
+	Unknown          *UnknownMessage
+}
+
+type UnknownMessage struct {
+	TypeURL string
+	Raw     []byte
+}
+
+type ConnectionClosed struct {
+	Timestamp time.Time
+}
+
+type Envelope struct {
+	ID            string
+	CorrelationID string
+	Kind          EnvelopeKind
+	Topic         EnvelopeTopic
+	Success       bool
+	Message       string
+	ErrorCode     string
+	Attributes    map[string]string
+	Subscription  *EventSubscription
+	Payload       any
+	Timestamp     time.Time
+}
+
 type RigData struct {
 	UUID        string
 	Provider    string
 	RigName     string
 	Frequency   uint64
 	Mode        string
-	FrequencyRx uint64
-	ModeRx      string
+	FrequencyRX uint64
+	ModeRX      string
 	Split       bool
 	Power       uint32
 	Timestamp   time.Time
 }
 
-// MessageType defines WSJT-X message types
-type MessageType int32
-
-const (
-	MessageType_HEARTBEAT            MessageType = 0
-	MessageType_STATUS               MessageType = 1
-	MessageType_DECODE               MessageType = 2
-	MessageType_CLEAR                MessageType = 3
-	MessageType_REPLY                MessageType = 4
-	MessageType_QSO_LOGGED           MessageType = 5
-	MessageType_CLOSE                MessageType = 6
-	MessageType_REPLAY               MessageType = 7
-	MessageType_HALT_TX              MessageType = 8
-	MessageType_FREE_TEXT            MessageType = 9
-	MessageType_WSPR_DECODE          MessageType = 10
-	MessageType_LOCATION             MessageType = 11
-	MessageType_LOGGED_ADIF          MessageType = 12
-	MessageType_HIGHLIGHT_CALLSIGN   MessageType = 13
-	MessageType_SWITCH_CONFIGURATION MessageType = 14
-	MessageType_CONFIGURE            MessageType = 15
-)
-
-type DecodeDeliveryMode int32
-
-const (
-	DecodeDeliveryMode_UNSPECIFIED DecodeDeliveryMode = 0
-	DecodeDeliveryMode_BATCHED     DecodeDeliveryMode = 1
-	DecodeDeliveryMode_REALTIME    DecodeDeliveryMode = 2
-	DecodeDeliveryMode_BOTH        DecodeDeliveryMode = 3
-)
-
-type PipeControlCommand int32
-
-const (
-	PipeControlCommand_UNSPECIFIED            PipeControlCommand = 0
-	PipeControlCommand_GET_SERVER_INFO        PipeControlCommand = 1
-	PipeControlCommand_GET_CONNECTED_PLUGINS  PipeControlCommand = 2
-	PipeControlCommand_SET_WSJTX_SUBSCRIPTION PipeControlCommand = 3
-)
-
-type PipePluginLogLevel int32
-
-const (
-	PipePluginLogLevel_UNSPECIFIED PipePluginLogLevel = 0
-	PipePluginLogLevel_DEBUG       PipePluginLogLevel = 1
-	PipePluginLogLevel_INFO        PipePluginLogLevel = 2
-	PipePluginLogLevel_WARN        PipePluginLogLevel = 3
-	PipePluginLogLevel_ERROR       PipePluginLogLevel = 4
-)
-
-type WsjtxSubscription struct {
-	MessageTypes       []MessageType
-	DecodeDeliveryMode DecodeDeliveryMode
+type WsjtxMessage struct {
+	Header              WsjtxMessageHeader
+	Heartbeat           *WsjtxHeartbeat
+	Status              *WsjtxStatus
+	Decode              *WsjtxDecode
+	Clear               *WsjtxClear
+	Reply               *WsjtxReply
+	QSOLogged           *WsjtxQSOLogged
+	Close               *WsjtxClose
+	HaltTx              *WsjtxHaltTx
+	FreeText            *WsjtxFreeText
+	WSPRDecode          *WsjtxWSPRDecode
+	Location            *WsjtxLocation
+	LoggedADIF          *WsjtxLoggedADIF
+	HighlightCallsign   *WsjtxHighlightCallsign
+	SwitchConfiguration *WsjtxSwitchConfiguration
+	Configure           *WsjtxConfigure
+	Timestamp           time.Time
 }
 
-// SpecialOperationMode defines special operation modes
-type SpecialOperationMode int32
-
-const (
-	SpecialOperationMode_NONE      SpecialOperationMode = 0
-	SpecialOperationMode_NA_VHF    SpecialOperationMode = 1
-	SpecialOperationMode_EU_VHF    SpecialOperationMode = 2
-	SpecialOperationMode_FIELD_DAY SpecialOperationMode = 3
-	SpecialOperationMode_RTTY_RU   SpecialOperationMode = 4
-	SpecialOperationMode_WW_DIGI   SpecialOperationMode = 5
-	SpecialOperationMode_FOX       SpecialOperationMode = 6
-	SpecialOperationMode_HOUND     SpecialOperationMode = 7
-)
-
-// ClearWindow defines clear window options
-type ClearWindow int32
-
-const (
-	ClearWindow_CLEAR_BAND_ACTIVITY ClearWindow = 0
-	ClearWindow_CLEAR_RX_FREQUENCY  ClearWindow = 1
-	ClearWindow_CLEAR_BOTH          ClearWindow = 2
-)
-
-// KeyModifiers defines keyboard modifiers
-type KeyModifiers uint32
-
-const (
-	KeyModifiers_NO_MODIFIER  KeyModifiers = 0x00
-	KeyModifiers_SHIFT        KeyModifiers = 0x02
-	KeyModifiers_CTRL         KeyModifiers = 0x04
-	KeyModifiers_ALT          KeyModifiers = 0x08
-	KeyModifiers_META         KeyModifiers = 0x10
-	KeyModifiers_KEYPAD       KeyModifiers = 0x20
-	KeyModifiers_GROUP_SWITCH KeyModifiers = 0x40
-)
-
-// MessageHeader contains common WSJT-X message header
-type MessageHeader struct {
-	MagicNumber uint32
-	SchemaNumer uint32
-	Type        MessageType
-	ID          string
+type WsjtxMessageHeader struct {
+	MagicNumber  uint32
+	SchemaNumber uint32
+	Type         WsjtxMessageType
+	ID           string
 }
 
-// Heartbeat message (type 0)
-type Heartbeat struct {
-	MaxSchemaNumer uint32
-	Version        string
-	Revision       *string
+type WsjtxHeartbeat struct {
+	MaxSchemaNumber uint32
+	Version         string
+	Revision        *string
 }
 
-// Status message (type 1)
-type Status struct {
+type WsjtxStatus struct {
 	DialFrequency      uint64
 	Mode               string
 	DXCall             string
@@ -145,23 +351,22 @@ type Status struct {
 	TXEnabled          bool
 	Transmitting       bool
 	Decoding           bool
-	RxDf               uint32
-	TxDf               uint32
+	RXDF               uint32
+	TXDF               uint32
 	DECall             string
 	DEGrid             string
 	DXGrid             string
-	TxWatchdog         bool
+	TXWatchdog         bool
 	SubMode            string
 	FastMode           bool
 	SpecialOpMode      *SpecialOperationMode
 	FrequencyTolerance *uint32
 	TRPeriod           *uint32
 	ConfigName         *string
-	TxMessage          *string
+	TXMessage          *string
 }
 
-// Decode message (type 2)
-type Decode struct {
+type WsjtxDecode struct {
 	IsNew          bool
 	Time           time.Time
 	SNR            int32
@@ -173,13 +378,11 @@ type Decode struct {
 	OffAir         bool
 }
 
-// Clear message (type 3)
-type Clear struct {
+type WsjtxClear struct {
 	Window ClearWindow
 }
 
-// Reply message (type 4)
-type Reply struct {
+type WsjtxReply struct {
 	Time           time.Time
 	SNR            int32
 	DeltaTime      float64
@@ -190,18 +393,17 @@ type Reply struct {
 	Modifiers      uint32
 }
 
-// QSOLogged message (type 5)
-type QSOLogged struct {
-	DatetimeOff         time.Time
+type WsjtxQSOLogged struct {
+	DateTimeOff         time.Time
 	DXCall              string
 	DXGrid              string
-	TxFrequency         uint64
+	TXFrequency         uint64
 	Mode                string
 	ReportSent          string
 	ReportReceived      string
-	TxPower             string
+	TXPower             string
 	Comments            string
-	DatetimeOn          time.Time
+	DateTimeOn          time.Time
 	OperatorCall        string
 	MyCall              string
 	MyGrid              string
@@ -210,22 +412,18 @@ type QSOLogged struct {
 	ADIFPropagationMode *string
 }
 
-// Close message (type 6)
-type Close struct{}
+type WsjtxClose struct{}
 
-// HaltTx message (type 8)
-type HaltTx struct {
-	AutoTxOnly bool
+type WsjtxHaltTx struct {
+	AutoTXOnly bool
 }
 
-// FreeText message (type 9)
-type FreeText struct {
+type WsjtxFreeText struct {
 	Text string
 	Send bool
 }
 
-// WSPRDecode message (type 10)
-type WSPRDecode struct {
+type WsjtxWSPRDecode struct {
 	IsNew     bool
 	Time      time.Time
 	SNR       int32
@@ -238,109 +436,73 @@ type WSPRDecode struct {
 	OffAir    *bool
 }
 
-// Location message (type 11)
-type Location struct {
+type WsjtxLocation struct {
 	Location string
 }
 
-// LoggedADIF message (type 12)
-type LoggedADIF struct {
+type WsjtxLoggedADIF struct {
 	ADIFText string
 }
 
-// HighlightCallsign message (type 13)
-type HighlightCallsign struct {
+type WsjtxHighlightCallsign struct {
 	Callsign        string
 	BackgroundColor uint32
 	ForegroundColor uint32
 	HighlightLast   bool
 }
 
-// SwitchConfiguration message (type 14)
-type SwitchConfiguration struct {
+type WsjtxSwitchConfiguration struct {
 	ConfigName string
 }
 
-// Configure message (type 15)
-type Configure struct {
+type WsjtxConfigure struct {
 	Mode               string
 	FrequencyTolerance uint32
 	SubMode            string
 	FastMode           bool
 	TRPeriod           uint32
-	RxDf               uint32
+	RXDF               uint32
 	DXCall             string
 	DXGrid             string
 	GenerateMessages   bool
 }
 
-// WsjtxMessage contains a complete WSJT-X message
-type WsjtxMessage struct {
-	Header    MessageHeader
-	Payload   WsjtxMessagePayload
-	Timestamp time.Time
-}
-
-// WsjtxMessagePayload is a discriminated union (interface) for message payloads
-type WsjtxMessagePayload interface {
-	isWsjtxMessagePayload()
-}
-
-// Implement isWsjtxMessagePayload for all message types
-func (Heartbeat) isWsjtxMessagePayload()           {}
-func (Status) isWsjtxMessagePayload()              {}
-func (Decode) isWsjtxMessagePayload()              {}
-func (Clear) isWsjtxMessagePayload()               {}
-func (Reply) isWsjtxMessagePayload()               {}
-func (QSOLogged) isWsjtxMessagePayload()           {}
-func (Close) isWsjtxMessagePayload()               {}
-func (HaltTx) isWsjtxMessagePayload()              {}
-func (FreeText) isWsjtxMessagePayload()            {}
-func (WSPRDecode) isWsjtxMessagePayload()          {}
-func (Location) isWsjtxMessagePayload()            {}
-func (LoggedADIF) isWsjtxMessagePayload()          {}
-func (HighlightCallsign) isWsjtxMessagePayload()   {}
-func (SwitchConfiguration) isWsjtxMessagePayload() {}
-func (Configure) isWsjtxMessagePayload()           {}
-
-// PackedDecodeMessage contains multiple WSJT-X messages
 type PackedDecodeMessage struct {
-	Messages  []*Decode
+	Messages  []WsjtxDecode
 	Timestamp time.Time
 }
 
-// Message is the interface for all messages returned by WaitMessage
-type Message interface {
-	isMessage()
+type CLHInternalMessage struct {
+	QSOUploadStatus *QSOUploadStatusChanged
+	PluginLifecycle *PluginLifecycleChanged
+	ServerStatus    *ServerStatusChanged
+	QSOQueueStatus  *QSOQueueStatusChanged
+	SettingsChanged *SettingsChanged
+	PluginTelemetry *PluginTelemetryChanged
+	Timestamp       time.Time
 }
 
-// Implement isMessage for message types
-func (RigData) isMessage()             {}
-func (WsjtxMessage) isMessage()        {}
-func (PackedDecodeMessage) isMessage() {}
-
-// ClhQSOUploadStatusChanged carries internal CLH QSO upload status
-type ClhQSOUploadStatusChanged struct {
+type QSODetail struct {
 	UploadedServices             map[string]bool
 	UploadedServicesErrorMessage map[string]string
 	OriginalCountryName          string
-	CqZone                       int32
-	ItuZone                      int32
+	CQZone                       int32
+	ITUZone                      int32
 	Continent                    string
 	Latitude                     float32
 	Longitude                    float32
-	GmtOffset                    float32
-	Dxcc                         string
+	GMTOffset                    float32
+	DXCC                         string
 	DateTimeOff                  time.Time
-	DxCall                       string
-	DxGrid                       string
-	TxFrequencyInHz              uint64
-	TxFrequencyInMeters          string
+	DXCall                       string
+	DXGrid                       string
+	TXFrequencyHz                uint64
+	TXFrequencyMeters            string
 	Mode                         string
 	ParentMode                   string
 	ReportSent                   string
 	ReportReceived               string
-	TxPower                      string
+	TXPower                      string
 	Comments                     string
 	Name                         string
 	DateTimeOn                   time.Time
@@ -349,88 +511,54 @@ type ClhQSOUploadStatusChanged struct {
 	MyGrid                       string
 	ExchangeSent                 string
 	ExchangeReceived             string
-	AdifPropagationMode          string
-	ClientId                     string
+	ADIFPropagationMode          string
+	ClientID                     string
 	RawData                      string
 	FailReason                   string
-	UploadStatus                 int32
+	UploadStatus                 UploadStatus
 	ForcedUpload                 bool
-	Uuid                         string
+	UUID                         string
 }
 
-type ClhPluginLifecycleEventType int32
+type QSOUploadStatusChanged struct {
+	Detail *QSODetail
+}
 
-const (
-	ClhPluginLifecycleEventType_UNSPECIFIED  ClhPluginLifecycleEventType = 0
-	ClhPluginLifecycleEventType_CONNECTED    ClhPluginLifecycleEventType = 1
-	ClhPluginLifecycleEventType_DISCONNECTED ClhPluginLifecycleEventType = 2
-	ClhPluginLifecycleEventType_TIMEOUT      ClhPluginLifecycleEventType = 3
-	ClhPluginLifecycleEventType_REPLACED     ClhPluginLifecycleEventType = 4
-)
-
-type ClhPluginLifecycleChanged struct {
-	PluginUuid    string
+type PluginLifecycleChanged struct {
+	PluginUUID    string
 	PluginName    string
 	PluginVersion string
 	Reason        string
-	EventType     ClhPluginLifecycleEventType
+	EventType     PluginLifecycleEventType
 	EventTime     time.Time
 }
 
-type ClhServerStatusChanged struct {
-	ClhInstanceId        string
-	ClhVersion           string
+type ServerStatusChanged struct {
+	InstanceID           string
+	Version              string
 	ConnectedPluginCount uint32
 	EventTime            time.Time
 }
 
-// ClhInternalMessage is an internal representation of CLH internal messages
-type ClhInternalMessage struct {
-	QsoUploadStatus *ClhQSOUploadStatusChanged
-	PluginLifecycle *ClhPluginLifecycleChanged
-	ServerStatus    *ClhServerStatusChanged
-	Timestamp       time.Time
+type QSOQueueStatusChanged struct {
+	PendingCount  uint32
+	UploadedTotal uint64
+	FailedTotal   uint64
+	EventTime     time.Time
 }
 
-func (ClhInternalMessage) isMessage() {}
-
-type PipeServerInfo struct {
-	ClhInstanceId        string
-	ClhVersion           string
-	KeepaliveTimeoutSec  uint32
-	ConnectedPluginCount uint32
+type SettingsChanged struct {
+	ChangedPart string
+	Summary     string
+	EventTime   time.Time
 }
 
-type PipePluginInfo struct {
-	Uuid              string
-	Name              string
-	Version           string
-	Description       string
-	Capabilities      []PluginCapability
-	Metadata          map[string]string
-	WsjtxSubscription *WsjtxSubscription
-	RegisteredAt      time.Time
-	LastHeartbeat     time.Time
+type PluginTelemetryChanged struct {
+	PluginUUID           string
+	ReceivedMessageCount uint64
+	SentMessageCount     uint64
+	ControlRequestCount  uint64
+	ControlErrorCount    uint64
+	LastRoundtripMs      uint32
+	EventTime            time.Time
 }
-
-type PipePluginList struct {
-	Plugins []*PipePluginInfo
-}
-
-type PipeControlResponse struct {
-	RequestID         string
-	Success           bool
-	Message           string
-	ServerInfo        *PipeServerInfo
-	ConnectedPlugins  *PipePluginList
-	WsjtxSubscription *WsjtxSubscription
-	Timestamp         time.Time
-}
-
-func (PipeControlResponse) isMessage() {}
-
-type PipeConnectionClosed struct {
-	Timestamp time.Time
-}
-
-func (PipeConnectionClosed) isMessage() {}
