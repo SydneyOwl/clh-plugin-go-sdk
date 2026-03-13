@@ -631,43 +631,86 @@ func (c *Client) ToggleUDPServer(ctx context.Context, enabled *bool) (UDPSnapsho
 	return fromPBUDPSnapshot(p), nil
 }
 
+func (c *Client) ToggleRigBackend(ctx context.Context, enabled *bool) (RigSnapshot, error) {
+	attrs := map[string]string{}
+	if enabled != nil {
+		attrs["enabled"] = fmt.Sprintf("%t", *enabled)
+	}
+
+	resp, err := c.requestExpectSuccess(ctx, EnvelopeKindCommand, EnvelopeTopicCommandToggleRigBackend, attrs, nil, nil)
+	if err != nil {
+		return RigSnapshot{}, err
+	}
+	p := &pb.PipeRigStatusSnapshot{}
+	if err = decodeResponsePayload(resp, p); err != nil {
+		return RigSnapshot{}, err
+	}
+	return fromPBRigSnapshot(p), nil
+}
+
+func (c *Client) SwitchRigBackend(ctx context.Context, backend RigBackend) (RigSnapshot, error) {
+	if backend == "" {
+		return RigSnapshot{}, errors.New("backend is required")
+	}
+
+	attrs := map[string]string{
+		"backend": string(backend),
+	}
+	resp, err := c.requestExpectSuccess(ctx, EnvelopeKindCommand, EnvelopeTopicCommandSwitchRigBackend, attrs, nil, nil)
+	if err != nil {
+		return RigSnapshot{}, err
+	}
+	p := &pb.PipeRigStatusSnapshot{}
+	if err = decodeResponsePayload(resp, p); err != nil {
+		return RigSnapshot{}, err
+	}
+	return fromPBRigSnapshot(p), nil
+}
+
+func (c *Client) UploadExternalQSO(ctx context.Context, adifLogs string) (Envelope, error) {
+	if adifLogs == "" {
+		return Envelope{}, errors.New("adifLogs is required")
+	}
+
+	resp, err := c.requestExpectSuccess(
+		ctx,
+		EnvelopeKindCommand,
+		EnvelopeTopicCommandUploadExternalQSO,
+		map[string]string{"adifLogs": adifLogs},
+		nil,
+		nil,
+	)
+	if err != nil {
+		return Envelope{}, err
+	}
+	return fromPBEnvelope(resp), nil
+}
+
+// StartRigBackend is kept for compatibility and maps to ToggleRigBackend(enabled=true).
 func (c *Client) StartRigBackend(ctx context.Context) (RigSnapshot, error) {
-	resp, err := c.requestExpectSuccess(ctx, EnvelopeKindCommand, EnvelopeTopicCommandStartRigBackend, nil, nil, nil)
-	if err != nil {
-		return RigSnapshot{}, err
-	}
-	p := &pb.PipeRigStatusSnapshot{}
-	if err = decodeResponsePayload(resp, p); err != nil {
-		return RigSnapshot{}, err
-	}
-	return fromPBRigSnapshot(p), nil
+	enabled := true
+	return c.ToggleRigBackend(ctx, &enabled)
 }
 
+// StopRigBackend is kept for compatibility and maps to ToggleRigBackend(enabled=false).
 func (c *Client) StopRigBackend(ctx context.Context) (RigSnapshot, error) {
-	resp, err := c.requestExpectSuccess(ctx, EnvelopeKindCommand, EnvelopeTopicCommandStopRigBackend, nil, nil, nil)
-	if err != nil {
-		return RigSnapshot{}, err
-	}
-	p := &pb.PipeRigStatusSnapshot{}
-	if err = decodeResponsePayload(resp, p); err != nil {
-		return RigSnapshot{}, err
-	}
-	return fromPBRigSnapshot(p), nil
+	enabled := false
+	return c.ToggleRigBackend(ctx, &enabled)
 }
 
+// RestartRigBackend is kept for compatibility and maps to stop then start.
 func (c *Client) RestartRigBackend(ctx context.Context) (RigSnapshot, error) {
-	resp, err := c.requestExpectSuccess(ctx, EnvelopeKindCommand, EnvelopeTopicCommandRestartRigBackend, nil, nil, nil)
-	if err != nil {
+	if _, err := c.StopRigBackend(ctx); err != nil {
 		return RigSnapshot{}, err
 	}
-	p := &pb.PipeRigStatusSnapshot{}
-	if err = decodeResponsePayload(resp, p); err != nil {
-		return RigSnapshot{}, err
-	}
-	return fromPBRigSnapshot(p), nil
+	return c.StartRigBackend(ctx)
 }
 
 func (c *Client) TriggerQSOReupload(ctx context.Context, attributes map[string]string) (Envelope, error) {
+	if attributes == nil || attributes["qsoIds"] == "" {
+		return Envelope{}, errors.New("qsoIds is required")
+	}
+
 	resp, err := c.requestExpectSuccess(
 		ctx,
 		EnvelopeKindCommand,

@@ -48,9 +48,9 @@ var commandTopicOptions = []namedValue[sdk.EnvelopeTopic]{
 	{Label: "COMMAND_OPEN_WINDOW", Value: sdk.EnvelopeTopicCommandOpenWindow},
 	{Label: "COMMAND_SEND_NOTIFICATION", Value: sdk.EnvelopeTopicCommandSendNotification},
 	{Label: "COMMAND_TOGGLE_UDP_SERVER", Value: sdk.EnvelopeTopicCommandToggleUDPServer},
-	{Label: "COMMAND_START_RIG_BACKEND", Value: sdk.EnvelopeTopicCommandStartRigBackend},
-	{Label: "COMMAND_STOP_RIG_BACKEND", Value: sdk.EnvelopeTopicCommandStopRigBackend},
-	{Label: "COMMAND_RESTART_RIG_BACKEND", Value: sdk.EnvelopeTopicCommandRestartRigBackend},
+	{Label: "COMMAND_TOGGLE_RIG_BACKEND", Value: sdk.EnvelopeTopicCommandToggleRigBackend},
+	{Label: "COMMAND_SWITCH_RIG_BACKEND", Value: sdk.EnvelopeTopicCommandSwitchRigBackend},
+	{Label: "COMMAND_UPLOAD_EXTERNAL_QSO", Value: sdk.EnvelopeTopicCommandUploadExternalQSO},
 	{Label: "COMMAND_TRIGGER_QSO_REUPLOAD", Value: sdk.EnvelopeTopicCommandTriggerQSOReupload},
 	{Label: "COMMAND_UPDATE_SETTINGS", Value: sdk.EnvelopeTopicCommandUpdateSettings},
 	{Label: "COMMAND_SUBSCRIBE_EVENTS", Value: sdk.EnvelopeTopicCommandSubscribeEvents},
@@ -82,6 +82,12 @@ var notificationLevels = []namedValue[sdk.NotificationLevel]{
 	{Label: "SUCCESS", Value: sdk.NotificationLevelSuccess},
 	{Label: "WARNING", Value: sdk.NotificationLevelWarning},
 	{Label: "ERROR", Value: sdk.NotificationLevelError},
+}
+
+var rigBackendOptions = []namedValue[sdk.RigBackend]{
+	{Label: "Hamlib", Value: sdk.RigBackendHamlib},
+	{Label: "FLRig", Value: sdk.RigBackendFLRig},
+	{Label: "OmniRig", Value: sdk.RigBackendOmniRig},
 }
 
 type demoUI struct {
@@ -117,8 +123,11 @@ type demoUI struct {
 	notificationLevel  *widget.Select
 	notificationTitle  *widget.Entry
 	notificationBody   *widget.Entry
+	rigToggleSelect    *widget.Select
+	rigBackendSelect   *widget.Select
 	udpToggleSelect    *widget.Select
 	qsoAttrsEntry      *widget.Entry
+	externalAdifEntry  *widget.Entry
 	settingsPatchEntry *widget.Entry
 
 	rawKindSelect  *widget.Select
@@ -206,12 +215,22 @@ func (d *demoUI) initWidgets() {
 	d.notificationBody.SetMinRowsVisible(2)
 	d.notificationBody.SetText("Hello from Fyne demo")
 
+	d.rigToggleSelect = widget.NewSelect([]string{"Auto", "Enable", "Disable"}, nil)
+	d.rigToggleSelect.SetSelected("Auto")
+
+	d.rigBackendSelect = widget.NewSelect(optionLabels(rigBackendOptions), nil)
+	d.rigBackendSelect.SetSelected(rigBackendOptions[0].Label)
+
 	d.udpToggleSelect = widget.NewSelect([]string{"Auto", "Enable", "Disable"}, nil)
 	d.udpToggleSelect.SetSelected("Auto")
 
 	d.qsoAttrsEntry = widget.NewMultiLineEntry()
 	d.qsoAttrsEntry.SetMinRowsVisible(4)
-	d.qsoAttrsEntry.SetPlaceHolder("key=value per line\nExample:\nforce=true")
+	d.qsoAttrsEntry.SetPlaceHolder("key=value per line\nExample:\nqsoIds=1")
+
+	d.externalAdifEntry = widget.NewMultiLineEntry()
+	d.externalAdifEntry.SetMinRowsVisible(6)
+	d.externalAdifEntry.SetPlaceHolder("<CALL:6>BH1XYZ <MODE:3>FT8 <BAND:3>20M <EOR>")
 
 	d.settingsPatchEntry = widget.NewMultiLineEntry()
 	d.settingsPatchEntry.SetMinRowsVisible(6)
@@ -396,25 +415,18 @@ func (d *demoUI) buildCommandTab() fyne.CanvasObject {
 
 	rigUdpCard := widget.NewCard(
 		"Rig + UDP Commands",
-		"Rig backend controls and UDP toggle",
+		"Rig backend controls (full SDK wrappers) and UDP toggle",
 		container.NewVBox(
 			container.NewGridWithColumns(3,
-				widget.NewButton("Start Rig Backend", func() {
-					d.runClientCall("StartRigBackend", func(ctx context.Context, c *sdk.Client) (any, error) {
-						return c.StartRigBackend(ctx)
-					})
+				widget.NewButton("Toggle Rig Backend", func() {
+					d.commandToggleRigBackend()
 				}),
-				widget.NewButton("Stop Rig Backend", func() {
-					d.runClientCall("StopRigBackend", func(ctx context.Context, c *sdk.Client) (any, error) {
-						return c.StopRigBackend(ctx)
-					})
-				}),
-				widget.NewButton("Restart Rig Backend", func() {
-					d.runClientCall("RestartRigBackend", func(ctx context.Context, c *sdk.Client) (any, error) {
-						return c.RestartRigBackend(ctx)
-					})
+				widget.NewButton("Switch Rig Backend", func() {
+					d.commandSwitchRigBackend()
 				}),
 			),
+			container.NewHBox(widget.NewLabel("Rig Target"), d.rigToggleSelect),
+			container.NewHBox(widget.NewLabel("Rig Backend"), d.rigBackendSelect),
 			container.NewHBox(widget.NewLabel("UDP Target"), d.udpToggleSelect),
 			widget.NewButton("Toggle UDP Server", func() { d.commandToggleUDP() }),
 		),
@@ -422,12 +434,18 @@ func (d *demoUI) buildCommandTab() fyne.CanvasObject {
 
 	qsoSettingsCard := widget.NewCard(
 		"QSO + Settings Commands",
-		"Trigger QSO reupload and update settings patch",
+		"Trigger QSO reupload, upload external ADIF, and update settings patch",
 		container.NewVBox(
 			widget.NewLabel("QSO Reupload Attributes (key=value per line)"),
 			d.qsoAttrsEntry,
 			widget.NewButton("Trigger QSO Reupload", func() {
 				d.commandTriggerQSOReupload()
+			}),
+			widget.NewSeparator(),
+			widget.NewLabel("External QSO ADIF (COMMAND_UPLOAD_EXTERNAL_QSO)"),
+			d.externalAdifEntry,
+			widget.NewButton("Upload External QSO", func() {
+				d.commandUploadExternalQSO()
 			}),
 			widget.NewSeparator(),
 			widget.NewLabel("Settings Patch (key=value per line)"),
@@ -678,6 +696,32 @@ func (d *demoUI) commandToggleUDP() {
 	})
 }
 
+func (d *demoUI) commandToggleRigBackend() {
+	var enabled *bool
+	switch d.rigToggleSelect.Selected {
+	case "Enable":
+		v := true
+		enabled = &v
+	case "Disable":
+		v := false
+		enabled = &v
+	}
+	d.runClientCall("ToggleRigBackend", func(ctx context.Context, c *sdk.Client) (any, error) {
+		return c.ToggleRigBackend(ctx, enabled)
+	})
+}
+
+func (d *demoUI) commandSwitchRigBackend() {
+	backend, ok := valueByLabel(d.rigBackendSelect.Selected, rigBackendOptions)
+	if !ok {
+		d.appendLog("SwitchRigBackend input error: invalid backend")
+		return
+	}
+	d.runClientCall("SwitchRigBackend", func(ctx context.Context, c *sdk.Client) (any, error) {
+		return c.SwitchRigBackend(ctx, backend)
+	})
+}
+
 func (d *demoUI) commandTriggerQSOReupload() {
 	attrs, err := parseKeyValueLines(d.qsoAttrsEntry.Text)
 	if err != nil {
@@ -686,6 +730,17 @@ func (d *demoUI) commandTriggerQSOReupload() {
 	}
 	d.runClientCall("TriggerQSOReupload", func(ctx context.Context, c *sdk.Client) (any, error) {
 		return c.TriggerQSOReupload(ctx, attrs)
+	})
+}
+
+func (d *demoUI) commandUploadExternalQSO() {
+	adif := strings.TrimSpace(d.externalAdifEntry.Text)
+	if adif == "" {
+		d.appendLog("UploadExternalQSO input error: adif text is empty")
+		return
+	}
+	d.runClientCall("UploadExternalQSO", func(ctx context.Context, c *sdk.Client) (any, error) {
+		return c.UploadExternalQSO(ctx, adif)
 	})
 }
 

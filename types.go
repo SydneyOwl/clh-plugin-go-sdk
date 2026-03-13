@@ -39,9 +39,9 @@ const (
 	EnvelopeTopicCommandOpenWindow         EnvelopeTopic = 202
 	EnvelopeTopicCommandSendNotification   EnvelopeTopic = 203
 	EnvelopeTopicCommandToggleUDPServer    EnvelopeTopic = 204
-	EnvelopeTopicCommandStartRigBackend    EnvelopeTopic = 205
-	EnvelopeTopicCommandStopRigBackend     EnvelopeTopic = 206
-	EnvelopeTopicCommandRestartRigBackend  EnvelopeTopic = 207
+	EnvelopeTopicCommandToggleRigBackend   EnvelopeTopic = 205
+	EnvelopeTopicCommandSwitchRigBackend   EnvelopeTopic = 206
+	EnvelopeTopicCommandUploadExternalQSO  EnvelopeTopic = 207
 	EnvelopeTopicCommandTriggerQSOReupload EnvelopeTopic = 208
 	EnvelopeTopicCommandUpdateSettings     EnvelopeTopic = 209
 	EnvelopeTopicCommandSubscribeEvents    EnvelopeTopic = 210
@@ -128,6 +128,14 @@ const (
 	ServiceRunStatusRunning     ServiceRunStatus = 2
 	ServiceRunStatusStopped     ServiceRunStatus = 3
 	ServiceRunStatusError       ServiceRunStatus = 4
+)
+
+type RigBackend string
+
+const (
+	RigBackendHamlib  RigBackend = "Hamlib"
+	RigBackendFLRig   RigBackend = "FLRig"
+	RigBackendOmniRig RigBackend = "OmniRig"
 )
 
 type ControllableWindow string

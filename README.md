@@ -1,18 +1,22 @@
-# CLH Plugin Go SDK (v20260309)
+# CLH Plugin Go SDK
 
 Cloudlog Helper plugin SDK for Go, built on `clh-proto/gen/go/v20260312`.
 
-## Features
+## Install
 
-- Option-based configuration
-- Configurable heartbeat interval (`WithHeartbeatInterval`)
-- Message callback (`WithMessageHandler`)
-- Blocking receive (`WaitMessage(ctx)`)
-- Event stream is envelope-only (`PipeEnvelope` with typed `Payload`)
-- Clean structs only in public API (no protobuf structs returned)
-- Full plugin control/query wrapper methods for current protocol topics
+```bash
+go get github.com/SydneyOwl/clh-plugin-go-sdk
+```
 
-## Quick Start
+## What this SDK provides
+
+- Plugin registration / heartbeat / graceful deregistration
+- Typed query & command wrappers for current CLH plugin protocol topics
+- Dual inbound mode: callback (`WithMessageHandler`) + blocking read (`WaitMessage`)
+- Public API returns clean Go structs (no protobuf structs exposed)
+- `RawQuery` / `RawCommand` for advanced custom requests
+
+## Quick start
 
 ```go
 package main
@@ -33,8 +37,9 @@ func main() {
 			Version: "1.0.0",
 		},
 		sdk.WithHeartbeatInterval(3*time.Second),
+		sdk.WithRequestTimeout(8*time.Second),
 		sdk.WithMessageHandler(func(msg sdk.Message) {
-			log.Printf("callback kind=%s", msg.Kind)
+			log.Printf("callback message: kind=%s", msg.Kind)
 		}),
 	)
 	if err != nil {
@@ -46,32 +51,29 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("connected to instance=%s", reg.InstanceID)
-
-	// Blocking receive
-	go func() {
-		for {
-			msg, waitErr := client.WaitMessage(ctx)
-			if waitErr != nil {
-				return
-			}
-			log.Printf("wait message kind=%s", msg.Kind)
-		}
-	}()
+	log.Printf("connected: instance=%s version=%s", reg.InstanceID, reg.ServerInfo.Version)
 
 	info, err := client.QueryServerInfo(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("server version=%s", info.Version)
+	log.Printf("plugins=%d uptime=%d", info.ConnectedPluginCount, info.UptimeSec)
 
 	_ = client.Close(context.Background())
 }
 ```
 
-## Supported Methods
+## Core options
 
-### Query
+- `WithPipePath(path)` for custom named pipe path
+- `WithHeartbeatInterval(d)` to configure heartbeat interval
+- `WithRequestTimeout(d)` to configure default request timeout
+- `WithWaitBufferSize(n)` to tune `WaitMessage` buffer
+- `WithMessageHandler(fn)` to receive async callbacks
+
+## API coverage
+
+### Query wrappers
 
 - `QueryServerInfo`
 - `QueryConnectedPlugins`
@@ -82,7 +84,7 @@ func main() {
 - `QuerySettingsSnapshot`
 - `QueryPluginTelemetry`
 
-### Command
+### Command wrappers
 
 - `SubscribeEvents`
 - `ShowMainWindow`
@@ -90,13 +92,64 @@ func main() {
 - `OpenWindow`
 - `SendNotification`
 - `ToggleUDPServer`
+- `ToggleRigBackend`
+- `SwitchRigBackend`
+- `UploadExternalQSO`
 - `StartRigBackend`
 - `StopRigBackend`
 - `RestartRigBackend`
 - `TriggerQSOReupload`
 - `UpdateSettings`
 
-### Generic
+### Generic wrappers
 
 - `RawQuery`
 - `RawCommand`
+
+## Command examples
+
+```go
+ctx := context.Background()
+
+// 1) Subscribe to event topics
+_, _ = client.SubscribeEvents(ctx, sdk.EventSubscription{
+	Topics: []sdk.EnvelopeTopic{
+		sdk.EnvelopeTopicEventServerStatus,
+		sdk.EnvelopeTopicEventPluginLifecycle,
+		sdk.EnvelopeTopicEventWsjtxDecodeBatch,
+	},
+})
+
+// 2) Upload external ADIF QSO (maps to COMMAND_UPLOAD_EXTERNAL_QSO)
+_, _ = client.UploadExternalQSO(ctx, "<CALL:6>BH1XYZ <MODE:3>FT8 <BAND:3>20M <EOR>")
+
+// 3) Trigger reupload by qsoId (qsoId is required)
+_, _ = client.TriggerQSOReupload(ctx, map[string]string{
+	"qsoId": "your-qso-uuid",
+})
+
+// 4) Update settings patch
+_, _ = client.UpdateSettings(ctx, sdk.SettingsPatch{
+	Values: map[string]string{
+		"udp.enable_udp_server": "true",
+	},
+})
+```
+
+## Message handling model
+
+- `WithMessageHandler` receives async `sdk.Message` callback
+- `WaitMessage(ctx)` allows pull-style consumption
+- Inbound payloads are converted to typed models when possible
+- Unknown payloads are mapped to `UnknownMessage` (type URL + raw bytes)
+
+## Error model
+
+- Transport/state errors: `ErrNotConnected`, `ErrClientClosed`, context timeout/cancel
+- Remote response errors: `*RemoteError` (`Topic`, `Code`, `Message`, `CorrelationID`)
+
+## Demo app
+
+A full Fyne demo is included at:
+
+- `examples/fyne-demo`

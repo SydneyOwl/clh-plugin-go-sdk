@@ -1,13 +1,9 @@
 package clhplugin
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
-	"github.com/Microsoft/go-winio"
 	"io"
-	"net"
-	"runtime"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -65,12 +61,4 @@ func readUvarint(r io.Reader) (uint64, error) {
 		s += 7
 	}
 	return 0, errors.New("varint overflow")
-}
-
-func dialPipe(ctx context.Context, networkPath string) (net.Conn, error) {
-	if runtime.GOOS == "windows" {
-		return winio.DialPipeContext(ctx, networkPath)
-	}
-	var d net.Dialer
-	return d.DialContext(ctx, "unix", networkPath)
 }
