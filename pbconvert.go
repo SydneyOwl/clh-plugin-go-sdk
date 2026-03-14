@@ -279,8 +279,15 @@ func fromPBQSOUploadStatus(in *pb.ClhQSOUploadStatusChanged) *QSOUploadStatusCha
 	if in == nil {
 		return nil
 	}
+
+	var detail *QSODetail
+	if in.Detail != nil {
+		d := fromPBQSODetail(in.Detail)
+		detail = &d
+	}
+
 	return &QSOUploadStatusChanged{
-		Detail: ptr(fromPBQSODetail(in.Detail)),
+		Detail: detail,
 	}
 }
 
@@ -332,10 +339,6 @@ func fromPBQSODetail(in *pb.ClhQSODetail) QSODetail {
 		out.UploadedServicesErrorMessage[k] = v
 	}
 	return out
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
 
 func fromPBPluginLifecycle(in *pb.ClhPluginLifecycleChanged) *PluginLifecycleChanged {

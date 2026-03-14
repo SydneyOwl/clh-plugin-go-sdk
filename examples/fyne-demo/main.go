@@ -230,7 +230,7 @@ func (d *demoUI) initWidgets() {
 
 	d.externalAdifEntry = widget.NewMultiLineEntry()
 	d.externalAdifEntry.SetMinRowsVisible(6)
-	d.externalAdifEntry.SetPlaceHolder("<CALL:6>BH1XYZ <MODE:3>FT8 <BAND:3>20M <EOR>")
+	d.externalAdifEntry.SetPlaceHolder("<call:5>BA1ABC <gridsquare:4>OL12 <mode:3>FT8 <rst_sent:3>-17 <rst_rcvd:3>-13 <qso_date:8>20240930 <time_on:6>024231 <qso_date_off:8>20240930 <time_off:6>024314 <band:2>6m <freq:9>50.314044 <station_callsign:6>BA2ABC <my_gridsquare:4>OL34 <eor>")
 
 	d.settingsPatchEntry = widget.NewMultiLineEntry()
 	d.settingsPatchEntry.SetMinRowsVisible(6)

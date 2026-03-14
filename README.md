@@ -123,9 +123,9 @@ _, _ = client.SubscribeEvents(ctx, sdk.EventSubscription{
 // 2) Upload external ADIF QSO (maps to COMMAND_UPLOAD_EXTERNAL_QSO)
 _, _ = client.UploadExternalQSO(ctx, "<CALL:6>BH1XYZ <MODE:3>FT8 <BAND:3>20M <EOR>")
 
-// 3) Trigger reupload by qsoId (qsoId is required)
+// 3) Trigger reupload by qsoIds (qsoIds is required, use ;;; as separator for multiple IDs)
 _, _ = client.TriggerQSOReupload(ctx, map[string]string{
-	"qsoId": "your-qso-uuid",
+	"qsoIds": "your-qso-uuid",
 })
 
 // 4) Update settings patch
