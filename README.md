@@ -153,3 +153,7 @@ _, _ = client.UpdateSettings(ctx, sdk.SettingsPatch{
 A full Fyne demo is included at:
 
 - `examples/fyne-demo`
+
+## License
+
+This sdk is licensed under `The Unlicense`
