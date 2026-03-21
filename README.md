@@ -8,13 +8,26 @@ Cloudlog Helper plugin SDK for Go, built on `clh-proto/gen/go/v20260312`.
 go get github.com/SydneyOwl/clh-plugin-go-sdk
 ```
 
-## What this SDK provides
+## Features
 
-- Plugin registration / heartbeat / graceful deregistration
-- Typed query & command wrappers for current CLH plugin protocol topics
-- Dual inbound mode: callback (`WithMessageHandler`) + blocking read (`WaitMessage`)
-- Public API returns clean Go structs (no protobuf structs exposed)
-- `RawQuery` / `RawCommand` for advanced custom requests
+
+Starting from v0.3.2, CLH has a built-in plugin system that supports interaction with third-party plugins. You can freely develop plugins using the provided SDK.
+
+Basical functions including:
+
++ View current QSO queue status and details (QueryQsoQueueSnapshot).
++ Upload external QSOs by sending ADIF text (CommandUploadExternalQSO / UploadExternalQsoAsync).
++ Trigger re-upload for specific QSOs using qsoIds (multiple IDs separated by ;;;) (CommandTriggerQsoReupload).
++ Read current rig snapshot: backend, endpoint, frequency, mode, split, power (QueryRigSnapshot).
++ Read current UDP server snapshot: running state + bind address (QueryUdpSnapshot).
++ Read current settings snapshot (QuerySettingsSnapshot).
++ Read full runtime snapshot in one request (QueryRuntimeSnapshot).
++ Read server info: version, uptime, keepalive timeout, connected plugin count (QueryServerInfo).
++ Read connected plugin list + plugin metadata/subscriptions (QueryConnectedPlugins).
++ Read plugin telemetry: rx/tx counts, control errors, last roundtrip ms (QueryPluginTelemetry).
++ Control CLH UI: show/hide main window, open Settings/About/QSO Assistant/Station Statistics/Polar Chart windows.
++ Control services: toggle UDP server, toggle rig backend polling, switch rig backend (Hamlib, FLRig, OmniRig).
++ Subscribe to events: server status, plugin lifecycle, WSJT-X messages, realtime decode, batched decode, rig data, QSO upload status, QSO queue status, settings changed, plugin telemetry.
 
 ## Quick start
 
