@@ -1,6 +1,6 @@
 # CLH Plugin Go SDK
 
-Cloudlog Helper plugin SDK for Go, built on `clh-proto/gen/go/v20260312`.
+Cloudlog Helper plugin SDK for Go, built on `clh-proto/gen/go/v20260411`.
 
 ## Install
 

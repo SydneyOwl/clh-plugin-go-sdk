@@ -3,7 +3,7 @@ package clhplugin
 import (
 	"time"
 
-	pb "github.com/SydneyOwl/clh-proto/gen/go/v20260312"
+	pb "github.com/SydneyOwl/clh-proto/gen/go/v20260411"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"

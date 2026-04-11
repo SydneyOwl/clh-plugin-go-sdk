@@ -1,6 +1,6 @@
 module github.com/SydneyOwl/clh-plugin/fyne-demo
 
-go 1.23
+go 1.20
 
 replace github.com/SydneyOwl/clh-plugin-go-sdk v0.2.0 => ../..
 
@@ -13,7 +13,7 @@ require (
 	fyne.io/systray v1.12.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/SydneyOwl/clh-proto/gen/go/v20260312 v20260312.0.0-20260313125854-383cc7b33024 // indirect
+	github.com/SydneyOwl/clh-proto/gen/go/v20260411 v20260411.0.0-20260411044755-f319d05f35d5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -43,6 +43,6 @@ require (
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

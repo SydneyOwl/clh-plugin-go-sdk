@@ -14,7 +14,7 @@ const (
 	defaultRequestTimeout  = 8 * time.Second
 	defaultWaitBuffer      = 256
 	defaultSDKName         = "clh-plugin-go-sdk"
-	defaultSDKVersion      = "v20260312"
+	defaultSDKVersion      = "v20260411"
 )
 
 type MessageHandler func(Message)
